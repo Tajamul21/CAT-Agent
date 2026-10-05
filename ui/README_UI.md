@@ -10,16 +10,21 @@ their browser. Nothing is uploaded.
    It holds, for every video, `<sample_id>.mp4` and `<sample_id>.qa.json` (the GPT questions).
 
 ## What the clinician does
-1. Unzip the folder. Open the link in Chrome, Edge or Firefox and type their name or ID (top right).
-2. Click **Choose batch folder** (or drag the folder onto the page) and pick the unzipped folder.
-3. For each video: watch it (time chips jump to the evidence), mark the best question(s) with ★
-   (one or two), set whether the answer is correct, click **Edit** to fix the question, options or answer
-   (the GPT original is always kept), then **Done & next**.
-4. When finished: **Export → Export JSON** and send the file back. **Export CSV** gives an Excel-friendly
-   table with original and edited question/answer side by side.
+1. Unzip the folder. Open the link in Chrome or Edge (best: progress is also saved inside the batch folder), or Firefox/Safari.
+2. Type a **name or ID**. It is required: nothing is saved without it, and progress is stored under it.
+3. Click **Choose batch folder** (or drag the folder onto the page) and pick the unzipped folder. In Chrome/Edge allow
+   the site to save changes to the folder when asked.
+4. For each video: watch it (time chips jump to the evidence), mark the best question(s) with ★ (one or two), set
+   whether the answer is correct, use **Edit question** / **Edit answer** to fix wording (the GPT original is kept and
+   shown under the edit), then **Done & next**.
+5. Progress saves automatically after every change: in the browser, and in Chrome/Edge also as
+   `catagent_progress_<ID>.json` inside the batch folder. **Save progress** (or Ctrl/Cmd+S) saves immediately; when the
+   folder is not writable it downloads that file instead: put it into the batch folder and it loads automatically the
+   next time the folder is opened with the same name/ID. **Export → Load saved progress** also restores it.
+6. When finished: **Export → Export JSON** and send the file back. **Export CSV** gives an Excel table with the original
+   and edited question and answer side by side.
 
-Progress is saved automatically in the browser. To continue on another computer, use
-**Export → Import previous export** and open the folder again. Keys: ← / → previous/next video, 1/2/3 mark best.
+Keys: ← / → previous/next video, 1/2/3 mark best, Ctrl/Cmd+S save progress.
 
 ## Collecting the results
 Put the returned JSON files in `data/annotations/` and run `python3 scripts/collect_annotations.py`.
