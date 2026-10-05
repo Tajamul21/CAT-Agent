@@ -6,7 +6,7 @@
   <title>CAT-Agent Clinician Review</title>
   <meta name="description" content="Review GPT-generated questions for ophthalmic surgery videos: pick the best, edit, export.">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%230f766e'/%3E%3Ccircle cx='16' cy='16' r='6' fill='white'/%3E%3Ccircle cx='16' cy='16' r='3' fill='%230f766e'/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="styles.css?v=202610051905">
+  <link rel="stylesheet" href="styles.css?v=202610051926">
 </head>
 <body>
   <header class="topbar">
@@ -25,8 +25,10 @@
     <div class="topbar-actions">
       <label class="reviewer">
         <span>Reviewer</span>
-        <input id="reviewer" type="text" placeholder="Your name or ID" autocomplete="off" spellcheck="false">
+        <input id="reviewer" class="reviewer-input" type="text" placeholder="Your name or ID" autocomplete="off" spellcheck="false">
       </label>
+      <span id="save-status" class="save-status hidden" role="status" aria-live="polite"></span>
+      <button id="btn-save" class="btn ghost hidden" type="button" title="Save your progress now (Ctrl/Cmd+S). It also saves automatically.">Save progress</button>
       <button id="btn-open" class="btn ghost hidden" type="button" title="Open another batch folder">Open folder</button>
       <div class="menu-wrap">
         <button id="btn-export" class="btn primary" type="button" disabled aria-haspopup="true" aria-expanded="false">Export</button>
@@ -34,7 +36,7 @@
           <button type="button" role="menuitem" data-export="json">Export JSON <small>full record, re-importable</small></button>
           <button type="button" role="menuitem" data-export="csv">Export CSV <small>one row per question, for Excel</small></button>
           <hr>
-          <button type="button" role="menuitem" data-export="import">Import previous export… <small>continue where you left off</small></button>
+          <button type="button" role="menuitem" data-export="import">Load saved progress… <small>a progress or export file, e.g. from another computer</small></button>
         </div>
       </div>
     </div>
@@ -48,11 +50,17 @@
       <h1>Open your review batch</h1>
       <p class="lead">Drag the <b>batch folder</b> you received (for example <code>batch_001</code>) onto this box,
         or choose it below. Each video comes with its GPT-generated questions.</p>
+      <label class="id-field" for="reviewer-start">
+        <span>Your name or ID <b aria-hidden="true">*</b></span>
+        <input id="reviewer-start" class="reviewer-input" type="text" placeholder="e.g. Dr Smith or clinician_02" autocomplete="off" spellcheck="false" required>
+      </label>
+      <p id="start-hint" class="start-hint">Enter your name or ID to start. Nothing is saved without it.</p>
       <div class="drop-buttons">
-        <button id="btn-folder" class="btn primary lg" type="button">Choose batch folder</button>
-        <button id="btn-files" class="btn ghost lg" type="button">Choose files…</button>
+        <button id="btn-folder" class="btn primary lg" type="button" disabled>Choose batch folder</button>
+        <button id="btn-files" class="btn ghost lg" type="button" disabled>Choose files…</button>
       </div>
-      <p class="fine">Your files stay on this computer. Nothing is uploaded; progress is saved in this browser.</p>
+      <p class="fine">Your files stay on this computer; nothing is uploaded. Progress saves automatically in this browser
+        and, in Chrome or Edge, inside your batch folder, so you can stop and continue later. Use <b>Save progress</b> any time.</p>
     </section>
     <section class="howto">
       <h2>How it works</h2>
@@ -60,8 +68,8 @@
         <li><span class="n">1</span><b>Watch</b><p>Play the surgery video. Time chips jump to each moment.</p></li>
         <li><span class="n">2</span><b>Mark the best</b><p>Star the best one or two of the three questions.</p></li>
         <li><span class="n">3</span><b>Check the answer</b><p>Correct, partly correct, incorrect or can&#39;t tell.</p></li>
-        <li><span class="n">4</span><b>Edit if needed</b><p>Fix the question, options or answer. The original is kept.</p></li>
-        <li><span class="n">5</span><b>Export</b><p>Click Done &amp; next for each video, then export and send the file.</p></li>
+        <li><span class="n">4</span><b>Edit if needed</b><p>Edit the question or the answer. The GPT original is kept next to your edit.</p></li>
+        <li><span class="n">5</span><b>Save &amp; export</b><p>Save progress any time and continue later. When finished, export and send the file.</p></li>
       </ol>
     </section>
     <footer class="site-foot">
@@ -94,7 +102,7 @@
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-  <script src="config.js?v=202610051905"></script>
-  <script src="app.js?v=202610051905"></script>
+  <script src="config.js?v=202610051926"></script>
+  <script src="app.js?v=202610051926"></script>
 </body>
 </html>
