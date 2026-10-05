@@ -43,7 +43,8 @@ from typing import Any, Optional
 from bench.batches import prepared_dir
 from bench.config import Config
 from bench.log import get_logger, now_iso, record_run
-from bench.schema import AGENTIC_SKILLS, ANSWER_TYPES, DATASETS, DIFFICULTIES, QA_CATEGORIES, QAItem, QASet
+from bench.schema import (AGENTIC_SKILLS, ANSWER_LENGTHS, ANSWER_TYPES, CLINICAL_USES, CLOSED_ANSWER_TYPES, DATASETS,
+                          DIFFICULTIES, QA_CATEGORIES, SA_LEVELS, TIMING_ANSWER_TYPES, QAItem, QASet)
 from bench.util import iter_jsonl, jaccard, md_table, read_json, tokenize_simple, write_json, write_jsonl
 
 STAGE = "validate"
@@ -64,6 +65,10 @@ HARD_ISSUES = frozenset({
 SOFT_ISSUES = frozenset({
     "low_confidence", "no_evidence", "options_on_non_mc", "multiple_mc_questions", "unknown_difficulty",
     "unknown_agentic_skill", "missing_rationale",
+    # v2 situation-awareness diversity checks (only for QA sets that carry sa_level)
+    "unknown_sa_level", "unknown_clinical_use", "unknown_answer_length", "answer_not_in_options",
+    "sa_levels_not_covered", "duplicate_family", "no_short_answer", "no_multi_line_answer",
+    "too_many_timing_questions",
 })
 
 _QID_PREFIX_RE = re.compile(r"^q\d+:")
@@ -199,7 +204,8 @@ def check_question(q: QAItem, duration_s: Optional[float]) -> list[str]:
         codes.append("empty_question")
     if not answer:
         codes.append("empty_answer")
-    elif question and q.answer_type != "boolean" and len(answer) >= MIN_CONTAINMENT_CHARS and answer in question:
+    elif (question and q.answer_type not in CLOSED_ANSWER_TYPES and not (q.options or [])
+          and len(answer) >= MIN_CONTAINMENT_CHARS and answer in question):
         codes.append("answer_in_question")
     if not _norm(q.answer_rationale):
         codes.append("missing_rationale")
@@ -211,8 +217,18 @@ def check_question(q: QAItem, duration_s: Optional[float]) -> list[str]:
             codes.append(f"mc_option_count:{len(options)}")
         if answer and options and not mc_answer_matches(q.answer, options):
             codes.append("mc_answer_not_in_options")
+    elif options and q.answer_type in CLOSED_ANSWER_TYPES:
+        if answer and not mc_answer_matches(q.answer, options):
+            codes.append("answer_not_in_options")
     elif options:
         codes.append(f"options_on_non_mc:{len(options)}")
+    if q.sa_level:
+        if q.sa_level not in SA_LEVELS:
+            codes.append(f"unknown_sa_level:{q.sa_level}")
+        if q.clinical_use and q.clinical_use not in CLINICAL_USES:
+            codes.append(f"unknown_clinical_use:{q.clinical_use}")
+        if q.answer_length and q.answer_length not in ANSWER_LENGTHS:
+            codes.append(f"unknown_answer_length:{q.answer_length}")
 
     conf = _coerce_float(q.confidence)
     if conf is None:
@@ -249,6 +265,23 @@ def validate_qaset(qs: QASet, duration_s: Optional[float], expected_n: int = 3) 
 
     if sum(1 for q in questions if q.answer_type == "multiple_choice") > 1:
         set_issues.append("multiple_mc_questions")
+
+    if any(q.sa_level for q in questions):  # v2 situation-awareness set
+        levels = [q.sa_level for q in questions]
+        if expected_n >= len(SA_LEVELS) and not set(SA_LEVELS) <= set(levels):
+            missing = ",".join(l for l in SA_LEVELS if l not in levels)
+            set_issues.append(f"sa_levels_not_covered:{missing}")
+        fams = Counter(_norm(q.family) for q in questions if _norm(q.family))
+        for fam, k in fams.items():
+            if k > 1:
+                set_issues.append(f"duplicate_family:{fam}")
+        lengths = {q.answer_length for q in questions}
+        if lengths and not lengths & {"one_word", "short_phrase"}:
+            set_issues.append("no_short_answer")
+        if lengths and "multi_line" not in lengths:
+            set_issues.append("no_multi_line_answer")
+        if sum(1 for q in questions if q.answer_type in TIMING_ANSWER_TYPES) > 1:
+            set_issues.append("too_many_timing_questions")
 
     for q in questions:
         per_q[q.qid].extend(check_question(q, duration_s))

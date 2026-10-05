@@ -17,3 +17,6 @@ __pycache__/
 data_smoke*/
 ui_packages/
 .pytest_cache/
+
+# exported UI data (questions) must never reach the public repo
+ui/data/

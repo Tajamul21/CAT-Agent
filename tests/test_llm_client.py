@@ -148,7 +148,9 @@ def test_schema_issues_detects_missing_and_enum():
         "qid": "q1", "category": "temporal_grounding", "question": "q", "answer": "a", "answer_rationale": "r",
         "evidence_timestamps": [{"start_s": 1, "end_s": 2.5, "observation": "o"}], "agentic_skills": ["counting"],
         "tool_plan": ["seek"], "answer_type": "count", "options": [], "difficulty": "hard", "why_hard": "w",
-        "metadata_used": [], "confidence": 0.8}]}
+        "metadata_used": [], "confidence": 0.8, "sa_level": "L1_perception", "family": "CAPSULORHEXIS",
+        "phases_involved": ["Capsulorhexis"], "clinical_use": "postop_review", "answer_length": "one_word",
+        "why_a_surgeon_cares": "c", "likely_agent_failure": "f"}]}
     assert lc.schema_issues(good, QA_OUTPUT_SCHEMA) == []
     bad = json.loads(json.dumps(good))
     del bad["generator_notes"]
@@ -396,9 +398,13 @@ def _qa_payload() -> dict:
                 "answer_rationale": "Because of what is visible at 00:12.", "evidence_timestamps": [{"start_s": 10, "end_s": 20, "observation": "obs"}],
                 "agentic_skills": ["temporal_localization", "verification"], "tool_plan": ["seek to 00:10", "zoom"],
                 "answer_type": atype, "options": opts or [], "difficulty": "hard", "why_hard": "needs several steps",
-                "metadata_used": ["segments.phase"], "confidence": 0.8}
+                "metadata_used": ["segments.phase"], "confidence": 0.8,
+                "sa_level": ["L1_perception", "L2_comprehension", "L3_projection"][i - 1],
+                "family": ["INCISION", "CAPSULORHEXIS", "IOL INSERTION"][i - 1], "phases_involved": ["Incision"],
+                "clinical_use": "postop_review", "answer_length": ["short_phrase", "multi_line", "one_word"][i - 1],
+                "why_a_surgeon_cares": "it matters", "likely_agent_failure": "misses the brief cue"}
     return {"video_summary": "A short synthetic video.", "generator_notes": "none",
-            "questions": [q(1, "temporal_grounding", "timestamp"), q(2, "complication_detection_management", "boolean"),
+            "questions": [q(1, "temporal_grounding", "interval"), q(2, "complication_detection_management", "explanation"),
                           q(3, "instrument_anatomy_reasoning", "multiple_choice", ["A. x", "B. y", "C. z", "D. w"])]}
 
 
@@ -485,7 +491,7 @@ def test_generate_stage_end_to_end_with_mocked_gateway(smoke_data, monkeypatch):
     prov = qa.provenance
     assert prov["model"] == "gpt-6-astra" and prov["route"] == "responses" and prov["effort"] == "xhigh"
     assert prov["n_frames"] == 3 and prov["usage"]["prompt_tokens"] == 5000 and prov["usage"]["reasoning_tokens"] == 600
-    assert prov["prompt_version"] == "v1" and prov["attempts"] == 1 and prov["request_id"] == "cf-123" and prov["generated_at"]
+    assert prov["prompt_version"] == __import__("bench.config", fromlist=["load_config"]).load_config().get("llm.prompt_version") and prov["attempts"] == 1 and prov["request_id"] == "cf-123" and prov["generated_at"]
     req = read_json(Path(c.paths.qa) / "raw" / f"{sid}.request.json")
     assert "base64" not in json.dumps(req) and req["n_images"] == 3
     resp = read_json(Path(c.paths.qa) / "raw" / f"{sid}.response.json")

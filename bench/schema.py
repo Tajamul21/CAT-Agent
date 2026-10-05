@@ -10,7 +10,7 @@ import re
 from dataclasses import asdict, dataclass, field, fields
 from typing import Any, Optional
 
-PROMPT_VERSION = "v1"
+PROMPT_VERSION = "v2-situation-awareness"
 UI_SAMPLE_VERSION = 1
 
 DATASETS = ["cataract101", "cataract1k", "lmm_phase", "lmm_skill", "lmm_raw", "migs", "ophnet", "ophora"]
@@ -265,9 +265,20 @@ AGENTIC_SKILLS = [
     "instrument_recognition", "anatomy_recognition", "causal_reasoning", "planning",
     "external_knowledge_retrieval", "calculation", "comparison_across_segments",
     "anomaly_detection", "decision_under_uncertainty", "verification",
+    "forecasting", "abstention", "rubric_scoring",
 ]
-ANSWER_TYPES = ["free_text", "timestamp", "duration", "count", "boolean", "multiple_choice", "list", "ranking"]
-DIFFICULTIES = ["hard", "very_hard"]
+# v2 answer formats first; the v1 values stay valid so older QA files still validate
+ANSWER_TYPES_V2 = ["label", "yes_no", "count", "multiple_choice", "ordering", "interval", "rubric_score",
+                   "forecast", "explanation"]
+ANSWER_TYPES = ANSWER_TYPES_V2 + ["free_text", "timestamp", "duration", "boolean", "list", "ranking"]
+TIMING_ANSWER_TYPES = {"interval", "timestamp", "duration"}
+CLOSED_ANSWER_TYPES = {"label", "yes_no", "multiple_choice", "forecast", "boolean", "count", "rubric_score"}
+DIFFICULTIES = ["medium", "hard", "very_hard"]
+# situation awareness (Endsley 1995)
+SA_LEVELS = ["L1_perception", "L2_comprehension", "L3_projection"]
+CLINICAL_USES = ["intraop_decision", "postop_review", "skill_assessment", "complication_review",
+                 "outcome_prediction", "teaching"]
+ANSWER_LENGTHS = ["one_word", "short_phrase", "multi_line"]
 
 # Strict JSON schema (OpenAI structured outputs): every property required, no extra properties,
 # no minItems/maxItems/format keywords (not universally accepted in strict mode).
@@ -281,16 +292,30 @@ QA_OUTPUT_SCHEMA: dict = {
         },
         "questions": {
             "type": "array",
-            "description": "Exactly three questions with distinct categories.",
+            "description": "Exactly three questions: q1 L1 perception, q2 L2 comprehension, q3 L3 projection.",
             "items": {
                 "type": "object",
                 "additionalProperties": False,
                 "properties": {
                     "qid": {"type": "string", "enum": ["q1", "q2", "q3"]},
+                    "sa_level": {"type": "string", "enum": SA_LEVELS,
+                                 "description": "Situation-awareness level: q1 L1, q2 L2, q3 L3."},
+                    "family": {"type": "string",
+                               "description": "Phase or transition in capitals, e.g. 'HYDRO -> NUCLEUS'."},
+                    "phases_involved": {"type": "array", "items": {"type": "string"}},
+                    "clinical_use": {"type": "string", "enum": CLINICAL_USES},
                     "category": {"type": "string", "enum": QA_CATEGORIES},
                     "question": {"type": "string"},
-                    "answer": {"type": "string", "description": "Gold answer, concise and verifiable."},
-                    "answer_rationale": {"type": "string", "description": "Step-by-step reasoning with timestamps."},
+                    "answer_type": {"type": "string", "enum": ANSWER_TYPES_V2},
+                    "answer_length": {"type": "string", "enum": ANSWER_LENGTHS},
+                    "options": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Closed answer set (label / yes_no / forecast / multiple_choice 'A. ...'); "
+                                       "empty list for open questions.",
+                    },
+                    "answer": {"type": "string", "description": "Gold answer, in the stated length."},
+                    "answer_rationale": {"type": "string", "description": "Step-by-step reasoning with time ranges."},
                     "evidence_timestamps": {
                         "type": "array",
                         "items": {
@@ -308,27 +333,24 @@ QA_OUTPUT_SCHEMA: dict = {
                     "tool_plan": {
                         "type": "array",
                         "items": {"type": "string"},
-                        "description": "Ordered steps an agent would execute (seek, zoom, count, measure, look up).",
+                        "description": "Ordered agent actions (seek, zoom, count, compare, look up).",
                     },
-                    "answer_type": {"type": "string", "enum": ANSWER_TYPES},
-                    "options": {
-                        "type": "array",
-                        "items": {"type": "string"},
-                        "description": "Options 'A. ...' for multiple_choice; empty list otherwise.",
-                    },
-                    "difficulty": {"type": "string", "enum": DIFFICULTIES},
-                    "why_hard": {"type": "string"},
                     "metadata_used": {
                         "type": "array",
                         "items": {"type": "string"},
-                        "description": "Names of provided label fields used to write/verify the answer.",
+                        "description": "Label fields used to write/verify the answer; empty if none.",
                     },
+                    "difficulty": {"type": "string", "enum": DIFFICULTIES},
+                    "why_hard": {"type": "string"},
+                    "why_a_surgeon_cares": {"type": "string"},
+                    "likely_agent_failure": {"type": "string"},
                     "confidence": {"type": "number", "description": "0-1 confidence that the gold answer is correct."},
                 },
                 "required": [
-                    "qid", "category", "question", "answer", "answer_rationale", "evidence_timestamps",
-                    "agentic_skills", "tool_plan", "answer_type", "options", "difficulty", "why_hard",
-                    "metadata_used", "confidence",
+                    "qid", "sa_level", "family", "phases_involved", "clinical_use", "category", "question",
+                    "answer_type", "answer_length", "options", "answer", "answer_rationale", "evidence_timestamps",
+                    "agentic_skills", "tool_plan", "metadata_used", "difficulty", "why_hard", "why_a_surgeon_cares",
+                    "likely_agent_failure", "confidence",
                 ],
             },
         },
@@ -354,6 +376,14 @@ class QAItem:
     why_hard: str = ""
     metadata_used: list[str] = field(default_factory=list)
     confidence: float = 0.0
+    # v2 (situation-awareness prompt); empty for v1 files
+    sa_level: str = ""
+    family: str = ""
+    phases_involved: list[str] = field(default_factory=list)
+    clinical_use: str = ""
+    answer_length: str = ""
+    why_a_surgeon_cares: str = ""
+    likely_agent_failure: str = ""
 
     def to_dict(self) -> dict:
         return asdict(self)

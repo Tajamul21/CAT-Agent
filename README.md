@@ -89,11 +89,13 @@ Change quotas or rules in the YAML and re‑run `sample` (deterministic for a gi
   rejects raw video, so frames are the input; previews are only for the clinician UI.
 * Route: Responses API at `…/gateway/codex/openai/v1/responses`, `reasoning.effort = xhigh` (the gateway rejects
   `max`; `xhigh` is the maximum for this model), strict JSON schema (`bench/schema.py: QA_OUTPUT_SCHEMA`).
-* Output per video: `video_summary`, exactly 3 questions with distinct categories (temporal grounding, workflow
-  deviation, complication management, next‑step prediction, skill evidence, instrument/anatomy reasoning,
-  quantitative estimation, counterfactual decision, guideline cross‑reference, multi‑segment comparison), each
-  with gold answer, rationale, evidence time ranges, the agentic skills and tool plan it requires, answer type,
-  difficulty, why it is hard, metadata used and confidence.
+* Output per video (prompt v2, situation awareness after Endsley 1995): `video_summary` plus exactly 3 questions,
+  **q1 L1 Perception, q2 L2 Comprehension, q3 L3 Projection** ("forecast first, then verify"), each on a different
+  phase family, with mixed answer formats (at least one one-word / short closed answer and one multi-line answer),
+  at most one timing question, closed answer sets with "not determinable" where the view may not settle it. Each
+  question carries `sa_level`, `family`, `clinical_use`, `answer_type`, `answer_length`, options, gold answer,
+  rationale, evidence time ranges, agentic skills, tool plan, difficulty, why it is hard, why a surgeon cares, the
+  likely agent failure and confidence. The v1 prompt is kept in `config/prompts/v1/`.
 * Prompts live in `config/prompts/system.md` and `user_template.md`; bump `llm.prompt_version` when you edit them.
 
 **Time and cost.** One xhigh call with ~40 frames takes 2–10 min and 30–80k tokens. With `--concurrency 4`

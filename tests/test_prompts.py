@@ -163,7 +163,7 @@ def test_render_template_leaves_unknown_braces():
 def test_prompt_fingerprint_stable(cfg):
     assert prompts.prompt_fingerprint(cfg) == prompts.prompt_fingerprint(cfg)
     assert len(prompts.prompt_fingerprint(cfg)) == 12
-    assert prompts.prompt_version(cfg) == "v1"
+    assert prompts.prompt_version(cfg) == cfg.get("llm.prompt_version")
 
 
 def test_whole_clip_phase_label_when_no_segments(cfg, tmp_path):

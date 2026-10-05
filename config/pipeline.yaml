@@ -51,7 +51,7 @@ llm:
   timeout_s: 1200
   max_retries: 5
   questions_per_video: 3
-  prompt_version: v1
+  prompt_version: v2-situation-awareness
   price_per_m_input_usd: null      # fill in to get cost estimates in logs/status
   price_per_m_output_usd: null
 

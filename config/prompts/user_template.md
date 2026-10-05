@@ -23,11 +23,16 @@ Times are in the displayed video timeline described above. Frames are sparse: ev
 so cite time as ranges and rely on the label timeline for exact boundaries.
 <<FRAMES>>
 ## Task
-Using the frames and the labels above, write exactly {n_questions} tough, agentic questions following every rule
-in your instructions: three distinct categories, at least one temporally grounded and at least one requiring
-clinical judgment, varied answer types, at most one multiple-choice question with 4-5 options `A. ...`.
-Each question must be answerable from the full video by an agent with seek/zoom/count/measure/look-up tools,
-and verifiable by a clinician from the video plus these labels. Cite evidence as time ranges in `MM:SS` form
-in the text and as seconds in `evidence_timestamps`. Do not reference frame numbers.
+Write exactly {n_questions} situation-awareness questions about this case, following every rule in your
+instructions:
+- q1 L1 Perception, q2 L2 Comprehension, q3 L3 Projection (forecast first, then verify);
+- each about a different phase or transition, with three different categories and clinical uses where possible;
+- at least one one-word or very short closed answer and at least one multi-line answer;
+- at most one question that asks for a time, an interval or a duration; anchor the rest on surgical events;
+- closed answer sets in the question and in `options` wherever possible, with "not determinable" allowed
+  when the view may not settle it.
+Each question must be answerable only by watching this video, by an agent with seek, zoom, count, measure and
+look-up tools that does not see these labels, and verifiable by a clinician. Record evidence as time ranges in
+`evidence_timestamps`. Never mention frames or frame numbers.
 
 Return only the JSON object required by the schema.

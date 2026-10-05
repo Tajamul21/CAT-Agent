@@ -193,6 +193,10 @@ code { font-family: var(--mono); font-size: .9em; background: var(--surface-2); 
 .case-head h2 { margin: 0; font-size: 22px; letter-spacing: -.015em; line-height: 1.25; }
 .meta-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
 .pill { white-space: nowrap; display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 99px; font-size: 12.5px; font-weight: 600; background: var(--surface-2); color: var(--muted); border: 1px solid var(--border); }
+.pill.sa1 { background: #e7f0fc; color: #1f5fbf; border-color: transparent; }
+.pill.sa2 { background: #f0eafc; color: #6a3fc8; border-color: transparent; }
+.pill.sa3 { background: #e2f4f0; color: #0b6b5f; border-color: transparent; }
+.q-family { font-size: 11.5px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--faint); margin: 0 0 4px; }
 .pill.accent { background: var(--accent-soft); color: var(--accent-strong); border-color: transparent; }
 .pill.star { background: var(--star-soft); color: var(--star); border-color: transparent; }
 .pill.good { background: var(--good-soft); color: var(--good); border-color: transparent; }
