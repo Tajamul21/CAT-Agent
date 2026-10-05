@@ -1,0 +1,295 @@
+{
+  "ui_version": 1,
+  "sample_id": "ophora__-94kxcMIv2c_0",
+  "batch": 1,
+  "dataset": "ophora",
+  "dataset_title": "Ophora-160K",
+  "dataset_blurb": "Short (~5 s) clips cut from narrated YouTube ophthalmic-surgery videos, each paired with an instruction-style caption; the 28K subset is filtered for subtitles/watermarks.",
+  "citation": "Li W. et al. Ophora: A large-scale data-driven text-guided ophthalmic surgical video generation model. arXiv:2505.07449",
+  "license": "Apache-2.0 (YouTube-sourced content; attribution to original uploaders applies)",
+  "procedure": "Cataract surgery",
+  "procedure_category": "cataract",
+  "video": {
+    "preview": null,
+    "local_file": "ophora__-94kxcMIv2c_0.mp4",
+    "contact_sheet": "media/ophora__-94kxcMIv2c_0/contact_sheet.jpg",
+    "duration_s": 5.4,
+    "width": 1920,
+    "height": 1080,
+    "fps": 25.0
+  },
+  "metadata": [
+    {
+      "label": "Dataset",
+      "value": "Ophora-160K"
+    },
+    {
+      "label": "Video ID",
+      "value": "-94kxcMIv2c_0"
+    },
+    {
+      "label": "Procedure",
+      "value": "Cataract surgery"
+    },
+    {
+      "label": "Procedure category",
+      "value": "Cataract"
+    },
+    {
+      "label": "Duration",
+      "value": "5.4 s"
+    },
+    {
+      "label": "Resolution",
+      "value": "1920 x 1080"
+    },
+    {
+      "label": "Frame rate",
+      "value": "25 fps"
+    },
+    {
+      "label": "Narration / caption",
+      "value": "Demonstrate the direct chop technique in cataract surgery, including the 180-degree nucleus rotation, impalement with the phaco tip, and horizontal chop using the Nagahara chopper."
+    },
+    {
+      "label": "Source video (YouTube id)",
+      "value": "-94kxcMIv2c"
+    },
+    {
+      "label": "Clip index",
+      "value": "0"
+    },
+    {
+      "label": "Matched procedure keywords",
+      "value": "cataract, phaco, nucleus, chop"
+    },
+    {
+      "label": "Notes",
+      "value": "duration unknown until probed (Ophora clips average ~5.5 s)"
+    }
+  ],
+  "segments": [],
+  "frames": [
+    {
+      "t_s": 0.23,
+      "label": ""
+    },
+    {
+      "t_s": 0.68,
+      "label": ""
+    },
+    {
+      "t_s": 1.12,
+      "label": ""
+    },
+    {
+      "t_s": 1.57,
+      "label": ""
+    },
+    {
+      "t_s": 2.02,
+      "label": ""
+    },
+    {
+      "t_s": 2.48,
+      "label": ""
+    },
+    {
+      "t_s": 2.92,
+      "label": ""
+    },
+    {
+      "t_s": 3.38,
+      "label": ""
+    },
+    {
+      "t_s": 3.83,
+      "label": ""
+    },
+    {
+      "t_s": 4.28,
+      "label": ""
+    },
+    {
+      "t_s": 4.72,
+      "label": ""
+    },
+    {
+      "t_s": 5.15,
+      "label": ""
+    }
+  ],
+  "timeline_note": "All times refer to the source video as distributed in Ophora-160K (probed duration 5.4 s). No time-localised annotations exist for this video; frames were sampled on a uniform grid.",
+  "video_summary": "During approximately 00:00.2–00:01.6, a blue-sleeved phaco tip and an angled chopper are positioned close together over the nucleus. Across 00:02.0–00:04.7, the chopper moves toward the left side of the nucleus while the phaco tip remains relatively central; during 00:04.7–00:05.2, the chopper returns toward the superior-central nuclear surface. These movements are consistent with bimanual nuclear chopping/manipulation, but the clip does not establish a measured 180-degree rotation or complete full-thickness nuclear separation.",
+  "questions": [
+    {
+      "qid": "q1",
+      "category": "temporal_grounding",
+      "question": "Inspect 00:00.2–00:05.2 and track the chopper relative to the phaco tip and pupillary margin. What time interval brackets the chopper's final return from the left peripheral nuclear region toward the superior-central nucleus, with the phaco tip still positioned over the nucleus?",
+      "answer": "Approximately 00:04.7–00:05.2.",
+      "answer_rationale": "First identify the slender angled chopper entering from the lower left during 00:00.2–00:01.6. Follow its excursion toward the left nuclear region during 00:02.0–00:04.7, distinguishing its movement from the smaller shifts of the blue-sleeved phaco tip. Comparing the final positions during 00:04.7–00:05.2 shows the chopper returning inward and superiorly while the phaco tip remains over the nucleus.",
+      "evidence_timestamps": [
+        {
+          "start_s": 0.2,
+          "end_s": 1.6,
+          "observation": "The angled chopper lies just left of the centrally positioned blue-sleeved phaco tip."
+        },
+        {
+          "start_s": 2.0,
+          "end_s": 4.7,
+          "observation": "The chopper is repositioned along the left nuclear region; the phaco tip remains relatively central."
+        },
+        {
+          "start_s": 4.7,
+          "end_s": 5.2,
+          "observation": "The chopper's distal end returns toward the superior-central nucleus."
+        }
+      ],
+      "agentic_skills": [
+        "temporal_localization",
+        "instrument_recognition",
+        "anatomy_recognition",
+        "comparison_across_segments",
+        "verification"
+      ],
+      "tool_plan": [
+        "Replay 00:00.2–00:01.6 to identify the chopper and phaco tip.",
+        "Track the chopper tip relative to the pupil and nucleus through 00:02.0–00:04.7.",
+        "Slow playback during 00:04.7–00:05.2 and bracket the final inward repositioning.",
+        "Verify that the apparent return is instrument movement rather than movement of the entire eye."
+      ],
+      "answer_type": "timestamp",
+      "options": [],
+      "difficulty": "hard",
+      "why_hard": "The agent must track two adjacent reflective instruments through repeated small movements and distinguish the final inward repositioning from earlier adjustments and globe motion.",
+      "metadata_used": [],
+      "confidence": 0.94,
+      "validation_issues": []
+    },
+    {
+      "qid": "q2",
+      "category": "instrument_anatomy_reasoning",
+      "question": "Compare instrument behavior during 00:00.2–00:01.6, 00:02.0–00:04.3, and 00:04.7–00:05.2. What functional roles do the two instruments appear to serve, and what movement evidence favors bimanual chopping/manipulation over longitudinal groove sculpting?",
+      "answer": "The blue-sleeved phaco tip provides the relatively central engagement point, while the slender angled chopper performs the larger peripheral-to-central nuclear manipulations. The chopper's changing position around a comparatively stationary phaco tip favors chopping/manipulation; repeated longitudinal phaco sculpting passes are not demonstrated.",
+      "answer_rationale": "During 00:00.2–00:01.6, identify the larger blue-sleeved phaco instrument and the slender hooked instrument beside it. Across 00:02.0–00:04.3, the hooked instrument changes position along the left nuclear region while the phaco tip stays near the central nuclear surface. During 00:04.7–00:05.2, the chopper returns superiorly and centrally without a corresponding long sculpting excursion of the phaco tip. This relative-motion pattern supports the stated functional roles, but does not establish vacuum settings, ultrasound delivery, or the depth of phaco purchase.",
+      "evidence_timestamps": [
+        {
+          "start_s": 0.2,
+          "end_s": 1.6,
+          "observation": "A blue-sleeved phaco tip and a separate slender angled chopper are visible close together over the nucleus."
+        },
+        {
+          "start_s": 2.0,
+          "end_s": 4.3,
+          "observation": "The chopper changes its left-sided nuclear position more substantially than the relatively central phaco tip."
+        },
+        {
+          "start_s": 4.7,
+          "end_s": 5.2,
+          "observation": "The chopper is repositioned toward the superior-central nucleus; no long longitudinal phaco sculpting pass is demonstrated."
+        }
+      ],
+      "agentic_skills": [
+        "instrument_recognition",
+        "anatomy_recognition",
+        "comparison_across_segments",
+        "causal_reasoning",
+        "verification"
+      ],
+      "tool_plan": [
+        "Zoom on both distal instrument ends during 00:00.2–00:01.6.",
+        "Compare their trajectories relative to the nuclear surface during 00:02.0–00:04.3.",
+        "Inspect 00:04.7–00:05.2 for the direction of chopper repositioning.",
+        "Check the entire clip for repeated longitudinal phaco passes before distinguishing manipulation from groove sculpting."
+      ],
+      "answer_type": "free_text",
+      "options": [],
+      "difficulty": "hard",
+      "why_hard": "Instrument identity alone is insufficient: the answer requires comparing relative trajectories and separating visible mechanical behavior from unobservable machine settings or purchase depth.",
+      "metadata_used": [],
+      "confidence": 0.9,
+      "validation_issues": []
+    },
+    {
+      "qid": "q3",
+      "category": "counterfactual_decision",
+      "question": "After reviewing the nuclear lines and instrument movements across 00:00.2–00:05.2, suppose the surgeon is considering rotating an apparent nuclear segment. Which decision is best supported by what this clip actually establishes?",
+      "answer": "B. First verify segment mobility and adequate separation with controlled manipulation; the visible surface lines and instrument excursion alone do not prove full-thickness cleavage.",
+      "answer_rationale": "During 00:00.2–00:01.6, nuclear surface lines are already visible near the closely positioned instruments. During 00:02.0–00:04.3, chopper repositioning and changes in the visible nuclear surface support manipulation, but do not provide an unobstructed demonstration of separation through the posterior nuclear plate. During 00:04.7–00:05.2, the chopper returns centrally and substantial nuclear material remains. Therefore, verification of mobility and separation is justified before treating a segment as freely mobile; neither complete cleavage nor a specific capsular complication is established.",
+      "evidence_timestamps": [
+        {
+          "start_s": 0.2,
+          "end_s": 1.6,
+          "observation": "Nuclear surface lines are visible near the instruments before the larger left-sided chopper excursion."
+        },
+        {
+          "start_s": 2.0,
+          "end_s": 4.3,
+          "observation": "The chopper and nuclear surface change position, but the depth and completeness of any cleavage are not clearly demonstrated."
+        },
+        {
+          "start_s": 4.7,
+          "end_s": 5.2,
+          "observation": "The chopper returns toward the center with substantial nucleus still visible; complete independent segment mobility is not established."
+        }
+      ],
+      "agentic_skills": [
+        "comparison_across_segments",
+        "anatomy_recognition",
+        "causal_reasoning",
+        "decision_under_uncertainty",
+        "planning",
+        "verification"
+      ],
+      "tool_plan": [
+        "Inspect the nuclear lines during 00:00.2–00:01.6 to establish their initial appearance.",
+        "Replay 00:02.0–00:04.3 slowly, looking for actual fragment separation rather than instrument motion alone.",
+        "Inspect 00:04.7–00:05.2 for independent segment mobility or an unobstructed full-depth cleavage.",
+        "Choose the action that respects the remaining uncertainty without assuming an unshown complication."
+      ],
+      "answer_type": "multiple_choice",
+      "options": [
+        "A. Proceed with forceful rotation because the chopper excursion proves that all posterior nuclear bridges have separated.",
+        "B. First verify segment mobility and adequate separation with controlled manipulation; the visible surface lines and instrument excursion alone do not prove full-thickness cleavage.",
+        "C. Abandon nuclear manipulation and begin anterior vitrectomy because the changing nuclear lines establish posterior capsule rupture.",
+        "D. Proceed directly to cortical aspiration because the final instrument positions establish that nuclear removal is complete."
+      ],
+      "difficulty": "hard",
+      "why_hard": "The agent must distinguish visible surface changes from proof of full-depth separation and translate that evidentiary limit into a safe conditional surgical decision.",
+      "metadata_used": [],
+      "confidence": 0.96,
+      "validation_issues": []
+    }
+  ],
+  "generator_notes": "No expert phase or event timeline is available; all question evidence and approximate temporal brackets were constructed from the visible images. The narration-derived instruction suggests direct chop, a 180-degree rotation, impalement, and a Nagahara chopper, but the sampled clip does not independently verify the rotation angle, purchase depth, or exact chopper model, so these are not gold-answer requirements. Fractional-second ranges are retained because the entire clip lasts only 5.4 seconds. Complete nuclear cleavage, machine settings, capsular integrity, and subsequent surgical outcomes cannot be established from these views.",
+  "provenance": {
+    "model": "gpt-6-astra",
+    "route": "responses",
+    "effort": "medium",
+    "effort_requested": "medium",
+    "n_frames": 12,
+    "usage": {
+      "prompt_tokens": 7484,
+      "completion_tokens": 2646,
+      "reasoning_tokens": 389,
+      "total_tokens": 10130,
+      "cached_tokens": 0,
+      "route": "responses"
+    },
+    "latency_s": 59.84,
+    "generated_at": "2026-10-05T14:10:21-04:00",
+    "prompt_version": "v1",
+    "prompt_sha": "71eee6f6aa01",
+    "attempts": 1,
+    "request_id": "e2c901ea-2659-412e-99ef-01513aa0bda8",
+    "repaired": false,
+    "schema_issues": [],
+    "finish_note": null,
+    "est_cost_usd": null
+  },
+  "validation": {
+    "ok": true,
+    "issues": [],
+    "validated": true
+  }
+}
