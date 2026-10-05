@@ -66,6 +66,11 @@ code { font-family: var(--mono); font-size: .9em; background: var(--surface-2); 
   background: radial-gradient(circle at 50% 50%, var(--accent) 0 22%, #fff 23% 40%, var(--accent) 41% 100%);
   box-shadow: 0 0 0 4px var(--accent-soft);
 }
+.jhu { display: inline-flex; align-items: center; }
+.jhu img { height: 30px; width: auto; display: block; }
+.brand-divider { width: 1px; height: 30px; background: var(--border-strong); margin: 0 2px; }
+.site-foot { margin-top: 26px; display: flex; align-items: center; justify-content: center; gap: 12px; color: var(--faint); font-size: 13px; flex-wrap: wrap; text-align: center; }
+.site-foot img { height: 22px; width: auto; }
 .brand-title { font-weight: 700; letter-spacing: -.01em; font-size: 16px; }
 .brand-sub { color: var(--muted); font-size: 12.5px; margin-top: -2px; }
 .topbar-actions { display: flex; align-items: center; gap: 10px; }
@@ -293,6 +298,8 @@ details.reason summary { cursor: pointer; font-size: 13px; color: var(--accent);
 }
 @media (max-width: 820px) {
   .topbar { padding: 0 14px; }
+  .jhu img { height: 22px; }
+  .brand-divider { height: 24px; }
   .topbar-inner { flex-wrap: wrap; padding: 10px 0; }
   .topbar-actions { width: 100%; flex-wrap: wrap; }
   .reviewer { flex: 1; }
