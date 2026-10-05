@@ -495,12 +495,12 @@ def package_readme(batch: int, rows: list[dict], total_bytes: int, kind: str) ->
         "",
         "HOW TO USE",
         "1. Open the review website link you received and enter your annotator ID.",
-        f"2. On the list page click 'Load videos folder' and select THIS folder ({batch_dir_name(batch)}).",
+        f"2. Click 'Open batch folder' (or drag this folder onto the page) and select THIS folder ({batch_dir_name(batch)}).",
         "   The browser reads the files directly from your disk; nothing is uploaded anywhere.",
-        "3. Open a sample: its video now plays from this folder (timeline clicks and evidence chips seek it).",
-        "   If a video is missing the page shows the contact sheet (sampled frames with timestamps) instead.",
+        "3. Each video comes with its GPT questions (<sample_id>.qa.json). Pick the best question(s), edit if needed,",
+        "   and click Export when done. Send the exported file back.",
         "",
-        "DO NOT RENAME the files: the website matches them by name (<sample_id>.mp4).",
+        "DO NOT RENAME the files: the website pairs <sample_id>.mp4 with <sample_id>.qa.json by name.",
         "MANIFEST.csv lists every file with its dataset, procedure and duration.",
         "The videos are research data distributed under the licences of the source datasets (see the",
         "'About the dataset' panel in the website); do not share them further.",
@@ -509,8 +509,9 @@ def package_readme(batch: int, rows: list[dict], total_bytes: int, kind: str) ->
 
 
 def write_package(pkg_dir: Path, items: list[tuple[SampleRecord, PreparedSample, Path]], kind: str, batch: int,
-                  log) -> dict:
-    """Write ``<pkg_dir>/<sample_id>.mp4`` for every item plus MANIFEST.csv and README.txt."""
+                  log, docs: Optional[dict] = None) -> dict:
+    """Write ``<pkg_dir>/<sample_id>.mp4`` (+ ``<sample_id>.qa.json`` with the GPT questions when ``docs``
+    is given) for every item plus MANIFEST.csv and README.txt."""
     pkg_dir.mkdir(parents=True, exist_ok=True)
     rows: list[dict] = []
     total = 0
@@ -535,6 +536,8 @@ def write_package(pkg_dir: Path, items: list[tuple[SampleRecord, PreparedSample,
             continue
         size = dst.stat().st_size
         total += size
+        if docs and rec.sample_id in docs:
+            write_json(pkg_dir / f"{rec.sample_id}.qa.json", {**docs[rec.sample_id], "order": len(rows)})
         dur = prepared.probe.duration_s if prepared.probe and prepared.probe.duration_s else rec.duration_s
         rows.append({"sample_id": rec.sample_id, "dataset": rec.dataset, "procedure": rec.procedure,
                      "duration_s": round(float(dur), 3) if dur else "", "file": dst.name,
@@ -690,6 +693,7 @@ def main(args: argparse.Namespace, cfg: Config) -> int:
     counts: Counter = Counter()
     entries: list[dict] = []
     packaged: list[tuple[SampleRecord, PreparedSample, Path]] = []
+    package_docs: dict[str, dict] = {}
     for rec in selected:
         sid = rec.sample_id
         prepared_dir = resolve_prepared_dir(cfg, sid)
@@ -736,6 +740,7 @@ def main(args: argparse.Namespace, cfg: Config) -> int:
             "has_issues": has_issues,
         })
         packaged.append((rec, prepared, prepared_dir))
+        package_docs[sid] = doc
         counts["exported"] += 1
         counts["has_issues"] += int(has_issues)
         counts["with_preview"] += int(preview_url is not None)
@@ -778,7 +783,7 @@ def main(args: argparse.Namespace, cfg: Config) -> int:
     if batch is not None and packaged and not getattr(args, "no_package", False):
         pkg_dir = packages_dir(cfg, getattr(args, "packages_dir", None)) / batch_dir_name(int(batch))
         try:
-            package_info = write_package(pkg_dir, packaged, kind, int(batch), log)
+            package_info = write_package(pkg_dir, packaged, kind, int(batch), log, docs=package_docs)
         except Exception as e:  # noqa: BLE001 - the UI export itself succeeded; report and continue
             log.error("offline package failed: %s: %s", type(e).__name__, e)
             package_info = {"dir": str(pkg_dir), "error": f"{type(e).__name__}: {e}"}

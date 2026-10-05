@@ -1,222 +1,90 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="color-scheme" content="light dark">
-  <title>ophbench — clinician review</title>
+  <title>CAT-Agent Clinician Review</title>
+  <meta name="description" content="Review GPT-generated questions for ophthalmic surgery videos: pick the best, edit, export.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%230f766e'/%3E%3Ccircle cx='16' cy='16' r='6' fill='white'/%3E%3Ccircle cx='16' cy='16' r='3' fill='%230f766e'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="styles.css">
-  <script src="config.js"></script>
-  <script src="app.js" defer></script>
 </head>
 <body>
-  <a class="skip-link" href="#main">Skip to content</a>
-
   <header class="topbar">
-    <a class="brand" href="#/" id="brand"><span class="logo" aria-hidden="true"></span>ophbench <small>clinician review</small></a>
-    <span class="spacer"></span>
-    <span class="annotator-chip" id="annotator-chip" hidden>Annotating as <strong id="annotator-chip-name"></strong></span>
-    <button class="btn small" type="button" id="btn-theme" title="Toggle light / dark theme" aria-label="Toggle theme">Theme</button>
-    <button class="btn small" type="button" id="btn-help" aria-haspopup="dialog" aria-controls="dlg-help">Help <kbd>?</kbd></button>
+    <div class="brand">
+      <span class="logo" aria-hidden="true"></span>
+      <div>
+        <div class="brand-title">CAT-Agent</div>
+        <div class="brand-sub">Clinician question review</div>
+      </div>
+    </div>
+    <div class="topbar-actions">
+      <label class="reviewer">
+        <span>Reviewer</span>
+        <input id="reviewer" type="text" placeholder="Your name or ID" autocomplete="off" spellcheck="false">
+      </label>
+      <button id="btn-open" class="btn ghost hidden" type="button" title="Open another batch folder">Open folder</button>
+      <div class="menu-wrap">
+        <button id="btn-export" class="btn primary" type="button" disabled aria-haspopup="true" aria-expanded="false">Export</button>
+        <div id="export-menu" class="menu hidden" role="menu">
+          <button type="button" role="menuitem" data-export="json">Export JSON <small>full record, re-importable</small></button>
+          <button type="button" role="menuitem" data-export="csv">Export CSV <small>one row per question, for Excel</small></button>
+          <hr>
+          <button type="button" role="menuitem" data-export="import">Import previous export… <small>continue where you left off</small></button>
+        </div>
+      </div>
+    </div>
   </header>
 
-  <main id="main">
-    <!-- ============================================================ landing / list view -->
-    <section class="view" id="view-list" aria-labelledby="list-heading">
-      <h1 id="list-heading" class="visually-hidden">Samples to review</h1>
-      <div id="load-error" class="notice error" hidden></div>
-
-      <div class="card" id="annotator-card">
-        <form class="annotator-form" id="annotator-form" autocomplete="off">
-          <label for="annotator-input">Annotator ID
-            <input type="text" id="annotator-input" name="annotator" list="annotator-list" required
-                   pattern="[A-Za-z0-9_.\-]{1,64}" placeholder="e.g. jsmith" title="Letters, digits, dot, dash or underscore">
-          </label>
-          <datalist id="annotator-list"></datalist>
-          <button class="btn primary" type="submit">Continue</button>
-          <span class="small text-2">Your ID is remembered on this browser and stored with every annotation. Use the same ID on every visit.</span>
-        </form>
-        <div class="row between" id="annotator-current" hidden>
-          <div>Annotating as <strong id="annotator-name"></strong> <span class="small muted" id="annotator-scope"></span></div>
-          <button class="btn small" type="button" id="btn-switch">Switch annotator</button>
-        </div>
+  <!-- Start screen -->
+  <main id="start" class="start">
+    <section class="drop" id="dropzone" tabindex="0" aria-label="Drop your batch folder here">
+      <div class="drop-icon" aria-hidden="true"></div>
+      <h1>Open your review batch</h1>
+      <p class="lead">Drag the <b>batch folder</b> you received (for example <code>batch_001</code>) onto this box,
+        or choose it below. Each video comes with its GPT-generated questions.</p>
+      <div class="drop-buttons">
+        <button id="btn-folder" class="btn primary lg" type="button">Choose batch folder</button>
+        <button id="btn-files" class="btn ghost lg" type="button">Choose files…</button>
       </div>
-
-      <div id="list-notices"></div>
-
-      <div class="card" id="progress-card" hidden>
-        <div class="row between">
-          <h2>Progress</h2>
-          <span id="progress-text" class="text-2"></span>
-        </div>
-        <div class="progress" id="progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Samples completed">
-          <span class="p-done" id="p-done" style="width:0%"></span>
-          <span class="p-progress" id="p-progress" style="width:0%"></span>
-          <span class="p-todo" id="p-todo" style="width:100%"></span>
-        </div>
-        <div class="progress-legend" id="progress-legend"></div>
-      </div>
-
-      <div class="card" id="list-card" hidden>
-        <div class="toolbar">
-          <label>Dataset
-            <select id="filter-dataset"><option value="">All datasets</option></select>
-          </label>
-          <label>Status
-            <select id="filter-status">
-              <option value="">All</option>
-              <option value="todo">To do</option>
-              <option value="in_progress">In progress</option>
-              <option value="done">Done</option>
-              <option value="flagged">Flagged</option>
-              <option value="issues">Has validation issues</option>
-            </select>
-          </label>
-          <label id="filter-batch-label" hidden>Batch
-            <select id="filter-batch"><option value="">All batches</option></select>
-          </label>
-          <label>Search
-            <input type="search" id="filter-query" placeholder="sample id, procedure…">
-          </label>
-          <label class="row" style="flex-direction:row;align-items:center;gap:0.4rem">
-            <input type="checkbox" id="toggle-thumbs"> Thumbnails
-          </label>
-          <div class="actions">
-            <button class="btn" type="button" id="btn-export" title="Download all your annotations as a JSON file">Export JSON</button>
-            <button class="btn" type="button" id="btn-import" title="Merge annotations from a previously exported JSON file">Import JSON</button>
-            <input type="file" id="file-import" accept="application/json,.json" hidden>
-            <button class="btn primary" type="button" id="btn-submit" title="Send your annotations to the study server">Submit</button>
-          </div>
-        </div>
-        <div id="submit-result"></div>
-        <div class="videos-bar" id="videos-bar" hidden>
-          <span class="small text-2" id="videos-status"></span>
-          <span class="actions">
-            <button class="btn small" type="button" id="btn-videos"
-                    title="Choose the shared folder that holds this batch's videos. Files are read locally in your browser and never uploaded.">Load videos folder</button>
-            <input type="file" id="file-videos" webkitdirectory directory multiple hidden>
-          </span>
-        </div>
-        <p class="small text-2" id="list-count"></p>
-        <div class="table-wrap">
-          <table class="samples" id="sample-table">
-            <thead>
-              <tr>
-                <th class="num">#</th>
-                <th id="th-thumb" hidden>Thumb</th>
-                <th>Sample</th>
-                <th>Dataset</th>
-                <th class="num col-opt" id="th-batch" hidden>Batch</th>
-                <th class="col-opt">Procedure</th>
-                <th class="col-opt">Category</th>
-                <th class="num">Duration</th>
-                <th class="num col-opt" title="Questions generated">Q</th>
-                <th>Status</th>
-                <th class="num" title="Questions you selected for the benchmark">Selected</th>
-              </tr>
-            </thead>
-            <tbody id="sample-rows"></tbody>
-          </table>
-          <div class="empty" id="list-empty" hidden>No samples match the current filters.</div>
-        </div>
-      </div>
-
-      <details class="panel" id="help-inline">
-        <summary>How to annotate (quick guide)</summary>
-        <div class="panel-body">
-          <ol>
-            <li><strong>Videos</strong> are usually shared with you as a folder (one batch of about 100 files). Press <strong>Load videos folder</strong> once and pick that folder: the videos then play directly from your computer — nothing is uploaded. Without the folder the contact sheet (timestamped frames) is shown.</li>
-            <li><strong>Open a sample</strong> from the list. Watch the video (or the contact sheet when no video is available) and use the phase timeline and evidence chips to jump to the relevant moments.</li>
-            <li><strong>Read the three AI-generated questions</strong> and their gold answers. For each question: judge whether the <em>answer is correct</em>, rate clinical relevance, difficulty, agentic/multi-step nature and clarity (1–5), and fix the wording of the question or answer if needed.</li>
-            <li><strong>Select</strong> the best <span class="select-rule">1–2</span> question(s) for the benchmark (tick <em>Select for benchmark</em>). Prefer questions that need several reasoning steps across the video and that a clinician can verify.</li>
-            <li>Add sample-level <strong>flags</strong> (video quality, wrong metadata, not suitable, duplicate) and comments where relevant, then press <strong>Mark complete</strong>.</li>
-            <li>Everything is saved automatically in this browser. When you finish a session press <strong>Submit</strong> (or <strong>Export JSON</strong> and send us the file).</li>
-          </ol>
-          <p class="small text-2">Keyboard: <kbd>j</kbd>/<kbd>k</kbd> next/previous sample, <kbd>n</kbd> next unfinished, <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> toggle selection of question 1–3, <kbd>?</kbd> full help.</p>
-        </div>
-      </details>
+      <p class="fine">Your files stay on this computer. Nothing is uploaded; progress is saved in this browser.</p>
     </section>
-
-    <!-- ============================================================ sample view -->
-    <section class="view" id="view-sample" aria-labelledby="sample-title" hidden>
-      <nav class="sample-nav" aria-label="Sample navigation">
-        <a class="btn" href="#/" id="btn-back">&larr; List</a>
-        <button class="btn" type="button" id="btn-prev" title="Previous sample (k)">&larr; Prev</button>
-        <button class="btn" type="button" id="btn-next" title="Next sample (j)">Next &rarr;</button>
-        <button class="btn" type="button" id="btn-next-unfinished" title="Next unfinished sample (n)">Next unfinished &raquo;</button>
-        <span class="title" id="sample-title">…</span>
-        <span class="pos" id="sample-pos"></span>
-        <span class="spacer grow"></span>
-        <span id="sample-status-chip"></span>
-      </nav>
-      <div id="sample-notices"></div>
-      <div class="sample-layout">
-        <div class="col-left" id="col-left"></div>
-        <div class="col-right" id="col-right"></div>
-      </div>
+    <section class="howto">
+      <h2>How it works</h2>
+      <ol>
+        <li><b>Watch</b> the surgery video. Click a time chip to jump to that moment.</li>
+        <li><b>Mark the best</b> of the three questions with ★ (one or two per video).</li>
+        <li><b>Check the answer</b>: correct, partly correct or incorrect.</li>
+        <li><b>Edit</b> the question, answer or options if needed. The original is always kept.</li>
+        <li>Click <b>Done &amp; next</b>. When finished, <b>Export</b> and send the file back.</li>
+      </ol>
     </section>
+    <input id="input-folder" type="file" webkitdirectory directory multiple hidden>
+    <input id="input-files" type="file" multiple accept="video/*,.mp4,.mov,.m4v,.webm,.mkv,.json" hidden>
+    <input id="input-import" type="file" accept=".json,application/json" hidden>
   </main>
 
-  <!-- ============================================================ help dialog -->
-  <dialog id="dlg-help" aria-labelledby="dlg-help-title">
-    <div class="dlg-head">
-      <h2 id="dlg-help-title">How to annotate</h2>
-      <button class="btn small" type="button" id="btn-help-close">Close</button>
-    </div>
-    <div class="dlg-body">
-      <p>You are reviewing short ophthalmic-surgery videos together with three questions and gold answers written by an AI model. The goal is a benchmark of <strong>tough, agentic</strong> questions: ones that need several reasoning steps across the video (seeking, counting, measuring, ordering phases, applying clinical judgment) and whose answers a clinician can verify from the video and its labels.</p>
+  <!-- Review workspace -->
+  <div id="workspace" class="workspace hidden">
+    <aside class="sidebar" aria-label="Videos in this batch">
+      <div class="side-head">
+        <div class="progress-label"><span id="progress-text">0 of 0 done</span><span id="progress-pct">0%</span></div>
+        <div class="progress"><div id="progress-bar"></div></div>
+        <input id="search" type="search" placeholder="Search videos…" aria-label="Search videos">
+        <div class="filters" role="group" aria-label="Filter by status">
+          <button type="button" class="chip-btn active" data-filter="all">All</button>
+          <button type="button" class="chip-btn" data-filter="todo">To do</button>
+          <button type="button" class="chip-btn" data-filter="done">Done</button>
+        </div>
+      </div>
+      <ol id="case-list" class="case-list"></ol>
+    </aside>
 
-      <h3>Videos folder (offline batches)</h3>
-      <p>The videos are shared with you as a folder per batch (<code>batch_001</code>, …). On the list page press <strong>Load videos folder</strong> and choose that folder; the browser reads the files from your disk when you open a sample and <strong>never uploads them</strong>. Chrome/Edge remember the folder between visits (press <em>Reconnect</em> when asked); other browsers ask you to select it again after a reload. Use the <strong>Batch</strong> filter to work through one batch at a time.</p>
+    <main id="case" class="case" tabindex="-1"></main>
+  </div>
 
-      <h3>Per sample</h3>
-      <ol>
-        <li>Watch the video. Click a <strong>timeline segment</strong> or an <strong>evidence chip</strong> to jump the video to that moment. If the video does not load, the contact sheet (sampled frames with timestamps) is shown instead.</li>
-        <li>Check the <strong>metadata</strong> panel (procedure, phases, surgeon experience, skill scores, flags…). If it is wrong, tick the <em>Metadata wrong</em> flag.</li>
-        <li>For each of the three questions fill in the controls below. Then tick <strong>Select for benchmark</strong> for the <span class="select-rule">1–2</span> best question(s) and press <strong>Mark complete</strong>.</li>
-      </ol>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-      <h3>Question controls</h3>
-      <dl class="help-grid">
-        <dt>Select for benchmark</dt><dd>Keep this question (with your edits) in the final benchmark. At least <span class="select-min">1</span>, at most <span class="select-max">2</span> per sample. Prefer verifiable, multi-step, clinically meaningful questions.</dd>
-        <dt>Answer correctness</dt><dd><em>Correct</em> — the gold answer is right; <em>Partially correct</em> — right in substance but imprecise or incomplete; <em>Incorrect</em> — wrong; <em>Cannot verify</em> — the video/labels do not allow you to decide.</dd>
-        <dt>Clinical relevance 1–5</dt><dd>1 = trivia, 5 = a question a surgical trainer would genuinely ask.</dd>
-        <dt>Difficulty 1–5</dt><dd>1 = answerable from one glance or from the metadata alone, 5 = needs careful review of several parts of the video.</dd>
-        <dt>Agentic / multi-step 1–5</dt><dd>1 = a single observation, 5 = requires planning several actions (seek, count, measure, compare segments, look up knowledge) and verification.</dd>
-        <dt>Clarity 1–5</dt><dd>1 = ambiguous or confusing wording, 5 = unambiguous with exactly one defensible answer.</dd>
-        <dt>Question / Answer text</dt><dd>Edit freely to fix wording, precision or errors. Your version is what goes into the benchmark; an <em>edited</em> marker appears and <em>Reset</em> restores the original.</dd>
-        <dt>Comment</dt><dd>Anything the study team should know about this question.</dd>
-      </dl>
-
-      <h3>Sample flags</h3>
-      <ul>
-        <li><strong>Video quality issue</strong> — blur, missing segments, wrong video, unusable preview.</li>
-        <li><strong>Metadata wrong</strong> — procedure, phase labels or other metadata do not match the video.</li>
-        <li><strong>Not suitable</strong> — the video should not be in the benchmark (e.g. not surgical, identifiable patient, too short to ask anything).</li>
-        <li><strong>Duplicate</strong> — you have seen this same video under another sample id.</li>
-      </ul>
-      <p>You can still mark a flagged sample complete; if nothing is worth selecting, tick <em>Not suitable</em>, select the least-bad question and explain in the comment.</p>
-
-      <h3>Saving, exporting and submitting</h3>
-      <ul>
-        <li>Every change is saved immediately in <strong>this browser</strong> (local storage), under your annotator ID. Clearing site data or switching browsers loses unsaved work, so <strong>Submit or Export regularly</strong>.</li>
-        <li><strong>Export JSON</strong> downloads all your annotations; <strong>Import JSON</strong> merges a file exported earlier (newer entries win), e.g. to continue on another computer.</li>
-        <li><strong>Submit</strong> sends your annotations to the study server (when configured). It is safe to submit several times; the latest version of each sample is kept.</li>
-      </ul>
-
-      <h3>Keyboard shortcuts</h3>
-      <dl class="help-grid">
-        <dt><kbd>j</kbd> / <kbd>k</kbd></dt><dd>Next / previous sample</dd>
-        <dt><kbd>n</kbd></dt><dd>Next unfinished sample</dd>
-        <dt><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd></dt><dd>Toggle <em>Select for benchmark</em> on question 1, 2, 3</dd>
-        <dt><kbd>?</kbd></dt><dd>Open this help</dd>
-        <dt><kbd>Esc</kbd></dt><dd>Close dialogs</dd>
-      </dl>
-      <p class="small muted">Shortcuts are ignored while typing in a text field.</p>
-    </div>
-  </dialog>
-
-  <div id="tl-tooltip" class="tl-tooltip" role="tooltip" hidden></div>
-  <div id="toast" role="status" aria-live="polite"></div>
+  <script src="config.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>

@@ -165,7 +165,8 @@ def test_export_batches_are_additive_and_packaged(env, tmp_path):
         assert sizes[f"{e['sample_id']}.mp4"] == (120 if e["dataset"] == "a" else 300)
     manifest_csv = (pkg / "MANIFEST.csv").read_text().splitlines()
     assert manifest_csv[0] == ",".join(export_ui.PACKAGE_MANIFEST_FIELDS) and len(manifest_csv) == 4
-    assert "Load videos folder" in (pkg / "README.txt").read_text()
+    assert "Open batch folder" in (pkg / "README.txt").read_text()
+    assert all((pkg / f"{e['sample_id']}.qa.json").is_file() for e in index)   # GPT questions travel with the videos
     asg1 = read_json(ui.data / "assignments.json")
     assert asg1["annotators"] == ["x", "y"] and len(asg1["overlap"]) == 2            # ceil(0.34*3) = 2
 
