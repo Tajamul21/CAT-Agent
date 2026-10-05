@@ -1,8 +1,10 @@
 # ophbench pipeline configuration (authoritative keys: DESIGN.md §11)
 seed: 20261005
 datasets_root: /mnt/store/tashraf4/datasets
-data_dir: data                # override with env OPHBENCH_DATA_DIR
-logs_dir: logs
+# all pipeline data, logs and clinician packages live OUTSIDE the code repo, next to it:
+data_dir: /mnt/store/tashraf4/projects/ophbench_data            # override with env OPHBENCH_DATA_DIR
+logs_dir: /mnt/store/tashraf4/projects/ophbench_data/logs       # override with env OPHBENCH_LOGS_DIR
+packages_dir: /mnt/store/tashraf4/projects/ophbench_data/packages  # override with env OPHBENCH_PACKAGES_DIR
 ffmpeg: auto                  # auto -> imageio_ffmpeg static binary
 ffprobe: auto                 # auto -> conda opencompass ffprobe if present
 workers: 12

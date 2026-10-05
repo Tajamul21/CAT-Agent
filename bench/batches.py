@@ -97,12 +97,17 @@ def package_kind(cfg: Optional[Config], override: Optional[str] = None) -> str:
 
 
 def packages_dir(cfg: Config, override: Optional[str] = None) -> Path:
-    """Where offline packages go: ``--packages-dir``, else $OPHBENCH_PACKAGES_DIR, else ``<repo>/ui_packages``."""
+    """Where offline packages go: ``--packages-dir``, else $OPHBENCH_PACKAGES_DIR, else ``config: packages_dir``,
+    else ``<repo>/ui_packages``."""
     if override:
         return Path(override).expanduser().resolve()
     env = os.environ.get(PACKAGES_DIR_ENV, "").strip()
     if env:
         return Path(env).expanduser().resolve()
+    configured = cfg.get("packages_dir") if cfg is not None else None
+    if configured:
+        p = Path(str(configured)).expanduser()
+        return p if p.is_absolute() else Path(cfg.root) / p
     return Path(cfg.root) / "ui_packages"
 
 

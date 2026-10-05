@@ -129,7 +129,7 @@ class Config:
             ui=ui_dir,
             ui_data=ui_dir / "data",
             ui_media=ui_dir / "media",
-            packages=Path(os.environ.get("OPHBENCH_PACKAGES_DIR") or (self.root / "ui_packages")),
+            packages=Path(os.environ.get("OPHBENCH_PACKAGES_DIR") or raw.get("packages_dir") or (self.root / "ui_packages")),
             resources=self.root / "resources",
             config=self.root / "config",
             prompts=self.root / "config" / "prompts",

@@ -106,6 +106,8 @@ logs and skips, so re‑run later to resume.
 
 ## 5. Outputs and logs
 
+All data lives **outside the code repo** in `/mnt/store/tashraf4/projects/ophbench_data/` (`data_dir`, `logs_dir` and `packages_dir` in `config/pipeline.yaml`); below, `data/` means that folder, `logs/` is `ophbench_data/logs/` and `ui_packages/` is `ophbench_data/packages/`.
+
 ```
 data/inventory/<dataset>.jsonl, summary.{json,md}      every candidate video with labels and strata
 data/sample/sample_manifest.{jsonl,csv}, sampling_report.{json,md}

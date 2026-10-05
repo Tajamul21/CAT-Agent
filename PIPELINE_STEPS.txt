@@ -2,6 +2,8 @@ OPHBENCH PIPELINE - FULL STEPS
 ==============================
 
 Project folder: /mnt/store/tashraf4/projects/ophbench
+Data folder:    /mnt/store/tashraf4/projects/ophbench_data  ("data/" below; logs in ophbench_data/logs,
+                clinician zips in ophbench_data/packages)
 Run every command from the project folder. The pipeline has ten steps. The first six run on the
 server with ./ophbench; the rest involve you and the clinicians. Only step 4 calls GPT and costs money.
 
@@ -16,7 +18,7 @@ OVERVIEW
 3   Prepare    ./ophbench prepare --batch 1                 data/prepared/batch_001/<sample_id>/  100 of 100
 4   Generate   ./ophbench generate --batch 1                data/qa/<sample_id>.json              Not started
 5   Validate   ./ophbench validate                          data/qa/validation_report.md          Not started
-6   Export     ./ophbench export-ui --batch 1               ui/  and  ui_packages/batch_001/      Not started
+6   Export     ./ophbench export-ui --batch 1               ophbench_data/packages/batch_001/      Not started
 7   Share      bash scripts/deploy_ui.sh, then zip package  GitHub Pages link                     -
 8   Annotate   clinicians, in the browser                   their exported JSON files             -
 9   Collect    python3 scripts/collect_annotations.py       data/annotations/                     -
