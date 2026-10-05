@@ -6,10 +6,11 @@
   <title>CAT-Agent Clinician Review</title>
   <meta name="description" content="Review GPT-generated questions for ophthalmic surgery videos: pick the best, edit, export.">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%230f766e'/%3E%3Ccircle cx='16' cy='16' r='6' fill='white'/%3E%3Ccircle cx='16' cy='16' r='3' fill='%230f766e'/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="styles.css?v=202610051833">
+  <link rel="stylesheet" href="styles.css?v=202610051835">
 </head>
 <body>
   <header class="topbar">
+  <div class="topbar-inner">
     <div class="brand">
       <span class="logo" aria-hidden="true"></span>
       <div>
@@ -33,6 +34,7 @@
         </div>
       </div>
     </div>
+  </div>
   </header>
 
   <!-- Start screen -->
@@ -50,12 +52,12 @@
     </section>
     <section class="howto">
       <h2>How it works</h2>
-      <ol>
-        <li><b>Watch</b> the surgery video. Click a time chip to jump to that moment.</li>
-        <li><b>Mark the best</b> of the three questions with ★ (one or two per video).</li>
-        <li><b>Check the answer</b>: correct, partly correct or incorrect.</li>
-        <li><b>Edit</b> the question, answer or options if needed. The original is always kept.</li>
-        <li>Click <b>Done &amp; next</b>. When finished, <b>Export</b> and send the file back.</li>
+      <ol class="steps">
+        <li><span class="n">1</span><b>Watch</b><p>Play the surgery video. Time chips jump to each moment.</p></li>
+        <li><span class="n">2</span><b>Mark the best</b><p>Star the best one or two of the three questions.</p></li>
+        <li><span class="n">3</span><b>Check the answer</b><p>Correct, partly correct, incorrect or can&#39;t tell.</p></li>
+        <li><span class="n">4</span><b>Edit if needed</b><p>Fix the question, options or answer. The original is kept.</p></li>
+        <li><span class="n">5</span><b>Export</b><p>Click Done &amp; next for each video, then export and send the file.</p></li>
       </ol>
     </section>
     <input id="input-folder" type="file" webkitdirectory directory multiple hidden>
@@ -84,7 +86,7 @@
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-  <script src="config.js?v=202610051833"></script>
-  <script src="app.js?v=202610051833"></script>
+  <script src="config.js?v=202610051835"></script>
+  <script src="app.js?v=202610051835"></script>
 </body>
 </html>

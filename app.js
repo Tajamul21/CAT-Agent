@@ -280,7 +280,7 @@
     renderList();
     const active = $(".case-item.active");
     if (active) active.scrollIntoView({ block: "nearest" });
-    $("#case").scrollTop = 0;
+    window.scrollTo(0, 0);
   }
 
   function seekTo(t) {
