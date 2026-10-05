@@ -1,0 +1,19 @@
+# generated data (large) - never commit
+data/
+logs/
+ui/media/
+ui/data/samples/
+ui/data/annotations/
+*.mp4
+*.jpg
+*.jpeg
+*.png
+!ui/assets/*.png
+__pycache__/
+*.pyc
+.env
+.api_keys.env
+.venv/
+data_smoke*/
+ui_packages/
+.pytest_cache/

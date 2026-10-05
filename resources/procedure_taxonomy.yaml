@@ -1,0 +1,49 @@
+# Procedure taxonomy used by the Ophora and OphNet adapters (DESIGN.md §3.5-3.6).
+# categories: cataract | glaucoma | cornea | retina | oculoplastics_strabismus | refractive | other_mixed
+
+# OphNet surgery id -> category (ids/names from resources/ophnet_labels.json)
+ophnet_surgery_category:
+  cataract: [0, 1, 2, 11, 13, 14, 16, 22, 27, 32, 37, 39, 40, 42, 45, 53]
+  glaucoma: [7, 8, 10, 12, 15, 19, 24, 35, 43, 47, 48, 49, 50, 58, 59, 60, 71, 72, 75, 77, 79]
+  cornea: [4, 6, 9, 17, 18, 21, 23, 28, 34, 36, 38, 46, 51, 55, 56, 57, 61, 62, 63, 64, 65, 66, 67, 69, 70, 73, 76]
+  retina: [25, 29]
+  refractive: [26, 68]
+  oculoplastics_strabismus: [78]
+  other_mixed: [3, 5, 20, 30, 31, 33, 41, 44, 52, 54, 74]
+
+# Ophora: ordered first-match keyword rules applied to the lower-cased instruction text.
+# `label` is the short procedure label stored in VideoRecord.procedure.
+ophora_keyword_rules:
+  - category: retina
+    label: Vitreoretinal surgery
+    any_of: [vitrectomy, vitreous, retina, retinal, macular, macula, epiretinal, "scleral buckle", buckle, intravitreal,
+             "silicone oil", endolaser, "pars plana", subretinal, "ilm peel", "membrane peel", "retinotomy", "endophotocoagulation"]
+  - category: glaucoma
+    label: Glaucoma surgery
+    any_of: [trabeculectomy, glaucoma, "tube shunt", ahmed, baerveldt, istent, hydrus, "xen gel", "xen stent", goniotomy,
+             trabeculotomy, canaloplasty, gonioscop, kahook, "gatt", cyclophotocoagulation, iridotomy, iridectomy,
+             sclerostomy, mitomycin, "filtering bleb", bleb, "trabecular meshwork", "schlemm", "preserflo"]
+  - category: oculoplastics_strabismus
+    label: Oculoplastic / strabismus surgery
+    any_of: [strabismus, "rectus muscle", "muscle recession", "muscle resection", ptosis, blepharoplasty, levator, eyelid,
+             "lid margin", dacryocystorhinostomy, " dcr", lacrimal, enucleation, evisceration, orbital, chalazion,
+             tarsorrhaphy, entropion, ectropion, canthal, "brow lift", "tarsal"]
+  - category: refractive
+    label: Refractive surgery
+    any_of: [lasik, " smile ", " prk", lasek, "excimer", "refractive lenticule", "lenticule extraction", "icl implant",
+             "phakic", "limbal relaxing", "arcuate keratotomy", "cross-linking", crosslinking, "corneal collagen"]
+  - category: cornea
+    label: Corneal / ocular surface surgery
+    any_of: [keratoplasty, dmek, dsaek, dsek, dalk, pterygium, "corneal graft", "corneal transplant", keratoprosthesis,
+             "amniotic membrane", descemet, endothelial, limbal, "conjunctival autograft", "corneal suture", keratectomy,
+             "corneal foreign body", intacs, "corneal ring", "corneal ulcer", "corneal perforation", "corneal laceration",
+             "donor cornea", "trephin"]
+  - category: cataract
+    label: Cataract surgery
+    any_of: [cataract, phaco, capsulorhexis, capsulorrhexis, capsulotomy, hydrodissection, hydrodelineation, "nucleus",
+             "nuclear", " iol", "intraocular lens", "lens implant", "cortex", "cortical", viscoelastic, "capsular tension",
+             " ecce", " sics", "small incision cataract", "posterior capsule", "lens fragment", "chop", "divide and conquer",
+             "anterior capsule", "capsular bag", "iris hook", "malyugin", "trypan"]
+  - category: other_mixed
+    label: Other ophthalmic surgery
+    any_of: []

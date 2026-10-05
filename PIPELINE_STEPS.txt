@@ -1,0 +1,83 @@
+OPHBENCH PIPELINE - FULL STEPS
+==============================
+
+Project folder: /mnt/store/tashraf4/projects/ophbench
+Run every command from the project folder. The pipeline has ten steps. The first six run on the
+server with ./ophbench; the rest involve you and the clinicians. Only step 4 calls GPT and costs money.
+
+
+OVERVIEW
+--------
+
+#   Step       Command                                      Output                                State on 2026-10-05
+--  ---------  -------------------------------------------  ------------------------------------  -------------------
+1   Inventory  ./ophbench inventory                         data/inventory/                       Done
+2   Sample     ./ophbench sample                            data/sample/                          Done
+3   Prepare    ./ophbench prepare --batch 1                 data/prepared/batch_001/<sample_id>/  100 of 100
+4   Generate   ./ophbench generate --batch 1                data/qa/<sample_id>.json              Not started
+5   Validate   ./ophbench validate                          data/qa/validation_report.md          Not started
+6   Export     ./ophbench export-ui --batch 1               ui/  and  ui_packages/batch_001/      Not started
+7   Share      bash scripts/deploy_ui.sh, then zip package  GitHub Pages link                     -
+8   Annotate   clinicians, in the browser                   their exported JSON files             -
+9   Collect    python3 scripts/collect_annotations.py       data/annotations/                     -
+10  Stage 2    to be defined                                -                                     -
+
+For the current state at any time, run:  ./ophbench status
+
+
+WHAT EACH STEP DOES
+-------------------
+
+1. Inventory
+   Reads every dataset's annotation files and lists all 31,941 candidate videos with their labels,
+   such as phase timelines, skill scores, adverse events, operation types and captions. It checks
+   that each file exists but never opens a video.
+
+2. Sample
+   Picks 1,500 videos using per-dataset quotas and balancing rules. It puts them in batch order so
+   every 100 covers all datasets, and the same seed always gives the same pick.
+
+3. Prepare
+   Builds the GPT input for each video: frames roughly every 10 seconds plus extra ones at phase
+   changes, each stamped with time and phase. It also makes a contact sheet, a 360p preview, and
+   the sample.json that ties it all together. No GPT is involved.
+
+4. Generate
+   Sends each video's labels and frames to GPT-6 Astra at maximum reasoning (xhigh), with rules for
+   tough, multi-step questions. It gets back a video summary plus exactly three Q&A, each with
+   answer, reasoning, evidence time ranges, the skills and tool steps an agent would need,
+   difficulty and confidence.
+
+5. Validate
+   Checks every Q&A set by rule, without GPT. It looks for three distinct question categories, real
+   answers, evidence inside the video, no near-duplicates and valid multiple-choice options.
+   Problems are flagged, not deleted.
+
+6. Export
+   Builds the annotation website's data, assigns videos to clinicians, and copies the batch's videos
+   into one folder you can share offline.
+
+7. Share
+   Publish the website on GitHub Pages, then send each clinician the link, the zipped video folder
+   and their annotator ID.
+
+8. Annotate
+   Clinicians load the video folder, watch each video, select one or two of its three questions,
+   rate and edit them, and export their work as JSON.
+
+9. Collect
+   Merges the returned files and reports which questions were selected and how well the clinicians
+   agree.
+
+10. Stage 2
+   Takes the merged annotations, the validated Q&A and the prepared videos as its input.
+
+
+BATCHES, LOGS AND PROGRESS
+--------------------------
+
+- Steps 3 to 9 repeat for each batch with --batch 2, --batch 3 and so on.
+- Every stage writes its own log in logs/, named by stage and time; logs/runs.jsonl has one
+  summary line per run.
+- ./ophbench status shows progress for all stages and batches.
+- Full documentation: README.md. Clinician guide: ui/README_UI.md.

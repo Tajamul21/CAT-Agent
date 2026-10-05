@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# Thin wrapper: run the pipeline CLI with the project's Python from the repo root.
+set -euo pipefail
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PY="${OPHBENCH_PYTHON:-/mnt/store/tashraf4/miniconda3/bin/python3}"
+if [ -f /mnt/store/tashraf4/.api_keys.env ]; then set +u; # shellcheck disable=SC1091
+  source /mnt/store/tashraf4/.api_keys.env; set -u; fi
+cd "$HERE"
+exec "$PY" -m bench.cli "$@"

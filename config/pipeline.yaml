@@ -1,0 +1,70 @@
+# ophbench pipeline configuration (authoritative keys: DESIGN.md §11)
+seed: 20261005
+datasets_root: /mnt/store/tashraf4/datasets
+data_dir: data                # override with env OPHBENCH_DATA_DIR
+logs_dir: logs
+ffmpeg: auto                  # auto -> imageio_ffmpeg static binary
+ffprobe: auto                 # auto -> conda opencompass ffprobe if present
+workers: 12
+
+# ---------------------------------------------------------------- sampling
+target_total: 1500
+quotas:
+  cataract101: 101
+  cataract1k: 300
+  lmm_phase: 150
+  lmm_skill: 120
+  lmm_raw: 80
+  migs: 160
+  ophnet: 420
+  ophora: 169
+sampling:
+  duration_bins_s: [300, 480, 720]            # <5, 5-8, 8-12, >12 min
+  cataract1k: {annotated_share: 0.87, rare_flag_first: true}
+  lmm_skill: {include_all_adverse: true}
+  lmm_raw: {min_duration_s: 300, max_duration_s: 1500, s2_min: 30, exclude_phase_subset: true}
+  migs: {min_per_operation_type: 1}
+  ophnet: {unit: case, max_case_duration_s: 1200, min_case_duration_s: 60, min_phases: 3, max_per_case: 1}
+  ophora:
+    one_clip_per_source_video: true
+    min_instruction_words: 12
+    category_weights: {cataract: 1.0, glaucoma: 2.0, cornea: 2.0, retina: 1.5, oculoplastics_strabismus: 2.0, refractive: 1.5, other_mixed: 1.0}
+
+# ---------------------------------------------------------------- media preparation
+media:
+  frames: {seconds_per_frame: 10, min_frames: 12, max_frames: 48, resize_long_side: 768, jpeg_quality: 85, boundary_frames: true}
+  contact_sheet: {cols: 6, tile_width: 320}
+  preview: {enabled: true, height: 360, crf: 28, max_duration_s: null}
+
+# ---------------------------------------------------------------- LLM (JHU WSE AI Gateway -> GPT-6 Astra)
+llm:
+  base_url: https://gateway.engineering.jhu.edu/gateway
+  api_key_env: GPT_ASTRA_KEY
+  api_key_file: /mnt/store/tashraf4/.api_keys.env
+  route: responses                 # responses (required for image input) | rest_chat (text-only)
+  model: openai/gpt-6-astra        # responses route strips the provider prefix automatically
+  reasoning_effort: xhigh          # maximum accepted by this model on the gateway ("max" is rejected)
+  max_completion_tokens: 32000
+  image_detail: high
+  stream: true                     # responses route: parse SSE (robust); false = broker-synthesised JSON
+  concurrency: 4
+  timeout_s: 1200
+  max_retries: 5
+  questions_per_video: 3
+  prompt_version: v1
+  price_per_m_input_usd: null      # fill in to get cost estimates in logs/status
+  price_per_m_output_usd: null
+
+# ---------------------------------------------------------------- annotation UI export
+ui:
+  media_base_url: ""               # e.g. https://media.example.org/ophbench ; empty -> relative ui/media
+  submit_url: ""                   # Google Apps Script web-app URL; empty -> download-only
+  questions_to_select_min: 1
+  questions_to_select_max: 2
+  annotators: []                   # e.g. [clinician_a, clinician_b]; empty -> everyone sees everything
+  overlap_fraction: 0.1
+
+# ---------------------------------------------------------------- clinician batches (offline video sharing)
+batches:
+  size: 100                      # samples per annotation batch (benchmark order interleaves datasets)
+  package_kind: preview          # preview (360p) | source (original / concatenated case video)

@@ -1,0 +1,35 @@
+The WSE AI Gateway lets you use one JHU-managed gateway domain instead of each provider’s public API base URL. Before sending a request, you must create a project, allow the providers and models you need, and create a key that is permitted to use those models.
+Beta Status and Limitations
+The WSE AI Gateway has been tested for chat and document-processing workflows, but not every provider feature, third-party application, agent workflow, or sensitive-data workflow has been tested.
+Important: Do not use the WSE AI Gateway for HIPAA-protected data or protected health information at this time.
+Contact CMTS before planning a course, research project, or production workflow around any unusual or high-volume use case. This includes provider-specific multi-modal features like image or video generation, and specific third-party applications or integrations. 
+Before You Begin
+Before you create your first request, make sure you have:
+A valid Johns Hopkins Enterprise Directory system account, often called a JHED account.
+A valid cost center for your AI Gateway project.
+A monthly budget cap for the project.
+The provider and model names you plan to use.
+Creating a Project in the WSE AI Gateway
+Go to gateway.engineering.jhu.edu and sign in with your JHED credentials.
+Click + New Project to create a project with a valid cost center and monthly budget cap.
+Project Managers: To request that a cost center be attached to a project, person, or department, email CMTShelp@jh.edu. 
+Add project details to the Create New Project form, including project name, cost center, and budget cap. Then select Continue.
+Select the providers you plan to use within your project. Select Continue.
+Select the models you would like to use for each of the providers you selected in the previous step. Select Continue.
+Review your project details, providers and models. Then select Create Project.
+Creating an API Key
+Go to the project page and select Add Key. 
+A Create API Key window will open. Name the key and enter your monthly spending limit. Select Continue.
+Select the model for the key being created. Limit the key to the models you actually need. Then select Create Key. 
+Save the plaintext key immediately, as it will only be shown once. Check the box next to "I have copied and saved this key." Select Done.
+Troubleshooting Model Access
+If you receive a MODEL_NOT_ALLOWED_FOR_KEY error, the model is not allowed for either the project or the key.
+To resolve the issue:
+1. Open your AI Gateway project.
+2. Confirm that the model is included in the project allow list.
+3. Go to the Keys tab.
+4. Confirm that the key allow list includes the same model.
+5. Update the request to use the exact provider-prefixed model name.
+6. Send the request again.
+Need Help?
+If you need assistance, contact CMTShelp@jhu.edu. Include the provider, model, endpoint path, and exact error message you are seeing.
