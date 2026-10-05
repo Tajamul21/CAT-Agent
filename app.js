@@ -66,6 +66,11 @@
     return `${Math.floor(t / 60)} min ${String(Math.round(t % 60)).padStart(2, "0")} s`;
   }
   const humanize = (s) => String(s || "").replace(/_/g, " ").replace(/^\w/, (c) => c.toUpperCase());
+  const SA = {
+    L1_perception: ["L1 Perception", "sa1"], L2_comprehension: ["L2 Comprehension", "sa2"], L3_projection: ["L3 Projection", "sa3"],
+  };
+  const LENGTH = { one_word: "one word", short_phrase: "short", multi_line: "multi-line" };
+  const prettyFamily = (s) => String(s || "").replace(/\s*->\s*/g, " → ");
   const nowIso = () => new Date().toISOString();
   const stem = (name) => String(name || "").split("/").pop().replace(/\.qa\.json$/i, "").replace(/\.[^.]+$/, "");
   const ext = (name) => (String(name).split(".").pop() || "").toLowerCase();
@@ -379,9 +384,10 @@
 
     const tags = el("div", { class: "q-tags" },
       el("span", { class: "q-index", text: `Q${k + 1}` }),
-      q.category ? el("span", { class: "pill accent", text: humanize(q.category) }) : null,
+      SA[q.sa_level] ? el("span", { class: `pill ${SA[q.sa_level][1]}`, text: SA[q.sa_level][0] })
+        : q.category ? el("span", { class: "pill accent", text: humanize(q.category) }) : null,
+      q.answer_type ? el("span", { class: "pill", text: humanize(q.answer_type) + (LENGTH[q.answer_length] ? ` · ${LENGTH[q.answer_length]}` : "") }) : null,
       q.difficulty ? el("span", { class: "pill", text: q.difficulty === "very_hard" ? "Very hard" : humanize(q.difficulty) }) : null,
-      q.answer_type ? el("span", { class: "pill", text: humanize(q.answer_type) }) : null,
       qa && qa.edited ? el("span", { class: "pill warn", text: "Edited" }) : null);
 
     let body;
@@ -418,6 +424,7 @@
       const ci = correctOptionIndex(fin.options, fin.answer);
       const ev = (q.evidence_timestamps || []).filter((e) => e && e.start_s !== undefined);
       body = el("div", null,
+        q.family ? el("div", { class: "q-family", text: prettyFamily(q.family) }) : null,
         el("div", { class: "q-text", text: fin.question }),
         fin.options && fin.options.length ? [el("div", { class: "label", text: "Options" }),
           el("ul", { class: "options" }, fin.options.map((o, j) => el("li", { class: j === ci ? "correct" : "", text: o })))] : null,
@@ -432,6 +439,9 @@
           el("div", { class: "reason-body" },
             q.answer_rationale ? [el("b", { text: "Reasoning: " }), q.answer_rationale, "\n\n"] : null,
             q.why_hard ? [el("b", { text: "Why it's hard: " }), q.why_hard, "\n\n"] : null,
+            q.why_a_surgeon_cares ? [el("b", { text: "Why a surgeon cares: " }), q.why_a_surgeon_cares, "\n\n"] : null,
+            q.likely_agent_failure ? [el("b", { text: "Likely agent failure: " }), q.likely_agent_failure, "\n\n"] : null,
+            q.clinical_use ? [el("b", { text: "Clinical use: " }), humanize(q.clinical_use), "\n"] : null,
             (q.agentic_skills || []).length ? [el("b", { text: "Skills needed: " }), q.agentic_skills.map(humanize).join(", "), "\n"] : null,
             (q.tool_plan || []).length ? [el("b", { text: "Agent steps: " }), q.tool_plan.map((s, j) => `${j + 1}. ${s}`).join("  "), "\n"] : null,
             q.confidence !== undefined ? [el("b", { text: "GPT confidence: " }), `${Math.round(100 * Number(q.confidence))}%`] : null)),
@@ -561,6 +571,9 @@
           relevance: null, difficulty: null, agentic: null, clarity: null,
           original: {
             question: q.question || "", answer: q.answer || "", options: q.options || [], category: q.category || "",
+            sa_level: q.sa_level || "", family: q.family || "", clinical_use: q.clinical_use || "",
+            answer_length: q.answer_length || "", why_a_surgeon_cares: q.why_a_surgeon_cares || "",
+            likely_agent_failure: q.likely_agent_failure || "",
             answer_type: q.answer_type || "", difficulty: q.difficulty || "", answer_rationale: q.answer_rationale || "",
             evidence_timestamps: q.evidence_timestamps || [], confidence: q.confidence ?? null,
           },
@@ -606,13 +619,13 @@
   function exportCsv() {
     if (!requireReviewer()) return;
     const data = buildExport();
-    const cols = ["annotator", "sample_id", "dataset", "procedure", "status", "qid", "category", "selected", "correctness",
+    const cols = ["annotator", "sample_id", "dataset", "procedure", "status", "qid", "sa_level", "family", "category", "selected", "correctness",
       "edited", "original_question", "final_question", "original_answer", "final_answer", "original_options",
       "final_options", "question_comment", "video_comment", "updated_at"];
     const rows = [cols.join(",")];
     for (const [sid, s] of Object.entries(data.samples)) {
       for (const [qid, q] of Object.entries(s.questions)) {
-        rows.push([data.annotator, sid, s.dataset, s.procedure, s.status, qid, q.original.category, q.selected ? "yes" : "no",
+        rows.push([data.annotator, sid, s.dataset, s.procedure, s.status, qid, q.original.sa_level, q.original.family, q.original.category, q.selected ? "yes" : "no",
           q.correctness, q.edited ? "yes" : "no", q.original.question, q.final.question, q.original.answer, q.final.answer,
           q.original.options, q.final.options, q.comment, s.comment, s.updated_at].map(csvCell).join(","));
       }
