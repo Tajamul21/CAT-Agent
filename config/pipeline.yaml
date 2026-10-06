@@ -54,8 +54,14 @@ llm:
   max_retries: 5
   questions_per_video: 3
   prompt_version: v2-situation-awareness
-  price_per_m_input_usd: null      # fill in to get cost estimates in logs/status
-  price_per_m_output_usd: null
+  # GPT-6 Astra public list prices (USD per million tokens, standard tier, Oct 2026); reasoning tokens are
+  # billed as output. The JHU WSE AI Gateway bill is authoritative: edit these to match it.
+  price_per_m_input_usd: 10.0
+  price_per_m_cached_input_usd: 1.0
+  price_per_m_output_usd: 50.0
+  price_long_context_threshold_tokens: 272000   # prompts above this are billed at the long-context rate
+  price_per_m_input_long_usd: 20.0
+  price_per_m_output_long_usd: 75.0
 
 # ---------------------------------------------------------------- annotation UI export
 ui:

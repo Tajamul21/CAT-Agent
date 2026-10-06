@@ -189,6 +189,45 @@ def load_json_records(paths: list[Path], log: logging.Logger) -> list[SampleAnn]
     return out
 
 
+def activity_stats(paths: list[Path], log: logging.Logger) -> dict:
+    """Per clinician: work done and active time, from the latest export/progress file of each annotator."""
+    latest: dict[str, tuple[str, dict]] = {}
+    for p in paths:
+        try:
+            obj = json.loads(p.read_text(encoding="utf-8"))
+        except Exception:  # noqa: BLE001 - already reported by load_json_records
+            continue
+        for rec in iter_records(obj):
+            who = str(rec.get("annotator") or "anonymous")
+            ts = str(rec.get("exported_at") or rec.get("received_at") or "")
+            if who not in latest or ts >= latest[who][0]:
+                latest[who] = (ts, rec)
+    out: dict[str, dict] = {}
+    for who, (ts, rec) in sorted(latest.items()):
+        samples = {k: v for k, v in (rec.get("samples") or {}).items() if isinstance(v, dict)}
+        act = rec.get("activity") if isinstance(rec.get("activity"), dict) else {}
+        by_sample = act.get("by_sample") if isinstance(act.get("by_sample"), dict) else {}
+        def secs(sid: str, s: dict) -> float:
+            return float(s.get("time_spent_s") or by_sample.get(sid) or 0)
+        done = {k: v for k, v in samples.items() if v.get("status") == "done"}
+        qs = [q for s in samples.values() for q in (s.get("questions") or {}).values() if isinstance(q, dict)]
+        sessions = [s for s in (act.get("sessions") or []) if isinstance(s, dict)]
+        active = float(act.get("total_active_s") or sum(float(x or 0) for x in by_sample.values()) or
+                       sum(secs(k, v) for k, v in samples.items()))
+        done_times = [secs(k, v) for k, v in done.items() if secs(k, v) > 0]
+        out[who] = {
+            "file_exported_at": ts, "videos_started": len(samples), "videos_done": len(done),
+            "questions_selected": sum(1 for q in qs if q.get("selected")),
+            "questions_edited": sum(1 for q in qs if q.get("edited")),
+            "active_s": round(active), "active_h": round(active / 3600, 2),
+            "avg_min_per_done_video": round(sum(done_times) / len(done_times) / 60, 1) if done_times else None,
+            "sessions": int(act.get("n_sessions") or len(sessions)),
+            "first_activity": min((str(s.get("started_at")) for s in sessions), default=None),
+            "last_activity": max((str(s.get("last_at") or s.get("started_at")) for s in sessions), default=None),
+        }
+    return out
+
+
 def load_sheet_csvs(question_csvs: list[Path], sample_csvs: list[Path], log: logging.Logger) -> list[SampleAnn]:
     """Rebuild SampleAnn objects from Apps Script sheet exports (latest row per key wins)."""
     q_latest: dict[tuple[str, str, str], dict] = {}
@@ -516,6 +555,16 @@ def write_summary_md(path: Path, summary: dict) -> None:
         lines += ["## Flagged samples", "",
                   md_table(["sample", "dataset", "annotators", "flags", "consensus selected"],
                            [[r["sample_id"], r["dataset"], r["n_annotators"], r["flags"], r["consensus_selected"] or "-"] for r in flagged[:200]]), ""]
+    act = summary.get("activity") or {}
+    if act:
+        lines += ["## Clinician activity", "",
+                  "Active time counts only while the clinician works on a video (pauses after 2 min idle).", "",
+                  md_table(["clinician", "videos done", "started", "selected", "edited", "active time", "min / done video",
+                            "sessions", "first activity", "last activity"],
+                           [[who, a["videos_done"], a["videos_started"], a["questions_selected"], a["questions_edited"],
+                             f"{a['active_h']} h", fmt(a["avg_min_per_done_video"]), a["sessions"],
+                             (a["first_activity"] or "-")[:16], (a["last_activity"] or "-")[:16]]
+                            for who, a in act.items()]), ""]
     lines += ["## Files", "", "* merged.jsonl - one row per annotator x sample x question", "* per_sample.csv - selections per sample",
               "* summary.json - all numbers above in machine-readable form", ""]
     path.write_text("\n".join(lines), encoding="utf-8")
@@ -580,6 +629,7 @@ def main(args: argparse.Namespace, cfg: Config) -> int:
         "per_question_category": grouped(lambda r: r["category"]),
         "per_annotator": grouped(lambda r: r["annotator"]),
         "agreement": agreement_stats(anns, info),
+        "activity": activity_stats(json_files, log),
         "per_sample": per_sample,
     }
     write_json(out_dir / "summary.json", summary)

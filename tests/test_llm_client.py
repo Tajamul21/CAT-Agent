@@ -262,7 +262,9 @@ def test_send_streaming_parses_completed(cfg):
     assert res.attempts == 1 and res.repaired is False and res.schema_issues == []
     assert seen[0]["stream"] is True
     assert "base64" not in json.dumps(res.request_redacted)
-    assert res.est_cost_usd is None  # no prices configured
+    from bench.usage import Pricing
+    expected = Pricing.from_cfg(client.cfg).cost(res.usage["prompt_tokens"], res.usage["cached_tokens"], res.usage["completion_tokens"])
+    assert res.est_cost_usd == expected  # list prices from config/pipeline.yaml
 
 
 def test_send_retries_on_429_then_succeeds(cfg):
@@ -362,7 +364,8 @@ def test_json_repair_uses_rest_chat_once(cfg):
 
 
 def test_estimate_cost_with_prices(cfg):
-    client = make_client(cfg, price_per_m_input_usd=2.0, price_per_m_output_usd=10.0)
+    client = make_client(cfg, price_per_m_input_usd=2.0, price_per_m_output_usd=10.0,
+                         price_long_context_threshold_tokens=None, price_per_m_cached_input_usd=None)
     assert client.estimate_cost({"prompt_tokens": 1_000_000, "completion_tokens": 100_000}) == pytest.approx(3.0)
     assert client.estimate_cost(None) is None
 

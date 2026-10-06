@@ -22,6 +22,7 @@ Design points
 from __future__ import annotations
 
 import argparse
+import contextlib
 import base64
 import copy
 import email.utils
@@ -572,6 +573,11 @@ class GatewayClient:
         self._lock = threading.Lock()
         self._effort_overrides: dict[str, str] = {}
         self.wait: wait_base = _WaitRetryAfter()
+        # usage ledger: every HTTP call is recorded (who, what for, tokens, cost); context is per thread
+        from bench.usage import Ledger, key_id
+        self.ledger = Ledger(cfg, log=self.log)
+        self.key_id = key_id(self._key)
+        self._ctx = threading.local()
 
     # ---- lifecycle --------------------------------------------------------------------------
     def close(self) -> None:
@@ -582,6 +588,34 @@ class GatewayClient:
 
     def __exit__(self, *exc: Any) -> None:
         self.close()
+
+    # ---- usage attribution ------------------------------------------------------------------
+    @contextlib.contextmanager
+    def usage_context(self, **info: Any):
+        """Attach stage/sample/dataset/batch to every call made by this thread inside the block."""
+        prev = getattr(self._ctx, "info", None)
+        self._ctx.info = {**(prev or {}), **info}
+        try:
+            yield
+        finally:
+            self._ctx.info = prev
+
+    def _record_call(self, req: "GatewayRequest", *, raw: Optional[dict], hdrs: Optional[dict], latency_s: float,
+                     attempt: int, error: Optional[BaseException] = None) -> None:
+        info = dict(getattr(self._ctx, "info", None) or {})
+        u = normalise_usage((raw or {}).get("usage"), req.route) if raw else {}
+        status_code = getattr(error, "status", None) if error is not None else 200
+        self.ledger.record(
+            stage=info.get("stage", "other"), purpose=getattr(self._ctx, "purpose", None) or info.get("purpose", "main"),
+            sample_id=info.get("sample_id"), dataset=info.get("dataset"), batch=info.get("batch"),
+            model=str((raw or {}).get("model") or req.model), route=req.route, effort=req.reasoning_effort,
+            status="ok" if error is None else "error", http_status=status_code,
+            error=None if error is None else f"{type(error).__name__}: {str(error)[:200]}",
+            prompt_tokens=u.get("prompt_tokens"), cached_tokens=u.get("cached_tokens"),
+            completion_tokens=u.get("completion_tokens"), reasoning_tokens=u.get("reasoning_tokens"),
+            total_tokens=u.get("total_tokens"), latency_s=round(latency_s, 2),
+            request_id=_rid(hdrs or {}) if hdrs else getattr(error, "request_id", None), attempt=attempt,
+            key_id=self.key_id)
 
     # ---- public API -------------------------------------------------------------------------
     def complete(self, user_parts: str | Sequence[dict], *, system: Optional[str] = None,
@@ -673,11 +707,10 @@ class GatewayClient:
 
     def estimate_cost(self, usage: Optional[dict]) -> Optional[float]:
         """USD estimate from ``price_per_m_input_usd``/``price_per_m_output_usd`` (None when unpriced)."""
-        if self.price_in is None or self.price_out is None or not usage:
+        if not usage:
             return None
-        p = usage.get("prompt_tokens") or 0
-        c = usage.get("completion_tokens") or 0
-        return round(p / 1e6 * self.price_in + c / 1e6 * self.price_out, 6)
+        return self.ledger.pricing.cost(usage.get("prompt_tokens"), usage.get("cached_tokens"),
+                                        usage.get("completion_tokens"))
 
     def list_models(self) -> list[str]:
         """``GET {base}/api/models`` -> model ids (shape-tolerant)."""
@@ -787,6 +820,17 @@ class GatewayClient:
                          retry_state.attempt_number, self.max_retries + 1, exc, sleep)
 
     def _post_once(self, req: GatewayRequest, counter: _Counter) -> tuple[dict, dict]:
+        """One HTTP call; recorded in the usage ledger whether it succeeds or fails."""
+        t0 = time.monotonic()
+        try:
+            raw, hdrs = self._post_once_raw(req, counter)
+        except Exception as e:
+            self._record_call(req, raw=None, hdrs=None, latency_s=time.monotonic() - t0, attempt=counter.n, error=e)
+            raise
+        self._record_call(req, raw=raw, hdrs=hdrs, latency_s=time.monotonic() - t0, attempt=counter.n)
+        return raw, hdrs
+
+    def _post_once_raw(self, req: GatewayRequest, counter: _Counter) -> tuple[dict, dict]:
         counter.n += 1
         streaming = req.route == "responses" and req.stream
         headers = self._headers(stream=streaming)
@@ -860,12 +904,16 @@ class GatewayClient:
             f"JSON schema:\n{json.dumps(schema, ensure_ascii=False)}\n\n"
             f"Draft output to repair:\n{invalid_text}"
         )
+        prev_purpose = getattr(self._ctx, "purpose", None)
+        self._ctx.purpose = "json_repair"
         try:
             req = self._build_rest_chat(None, [{"type": "text", "text": prompt}], schema, schema_name, "low", max_tokens)
             raw, _ = self._post_with_retries(req, counter)
         except GatewayError as e:
+            self._ctx.purpose = prev_purpose
             self.log.warning("JSON repair call failed: %s", e)
             return None, normalise_usage(None, "rest_chat")
+        self._ctx.purpose = prev_purpose
         fixed, err = extract_json(extract_output_text(raw, "rest_chat"))
         if fixed is None:
             self.log.warning("JSON repair call did not return a JSON object (%s)", err)
@@ -970,6 +1018,7 @@ def main(args: argparse.Namespace, cfg: Config) -> int:
     log.info("probe: base=%s model=%s route=%s effort=%s", cfg.get("llm.base_url"), cfg.get("llm.model"), route, effort)
     try:
         client = GatewayClient(cfg, log=log)
+        client._ctx.info = {"stage": "probe"}
     except (RuntimeError, ValueError) as e:
         log.error("cannot create client: %s", e)
         rows.append(("client", "FAIL", str(e)))

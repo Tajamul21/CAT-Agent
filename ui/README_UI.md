@@ -26,6 +26,10 @@ their browser. Nothing is uploaded.
 
 Keys: ← / → previous/next video, 1/2/3 mark best, Ctrl/Cmd+S save progress.
 
+Active time: the page counts the time a clinician actively works on each video (page visible and some input in the
+last 2 minutes, or the video playing). It is shown in the sidebar and on each video, and saved in the progress and
+export files (`time_spent_s` per video, `activity.sessions`). Nothing is sent anywhere.
+
 ## Collecting the results
 Put the returned JSON files in `data/annotations/` and run `python3 scripts/collect_annotations.py`.
 Each exported question carries `original` (GPT) and `final` (after edits) versions, plus `selected`,

@@ -112,6 +112,14 @@ def _round_robin(items: list[WorkItem]) -> list[WorkItem]:
     return out
 
 
+def _batch_of(cfg: Config, sample_id: str) -> Optional[int]:
+    try:
+        from bench.batches import manifest_batch_map
+        return manifest_batch_map(cfg).get(sample_id)
+    except Exception:
+        return None
+
+
 def select_work(records: list[SampleRecord], cfg: Config, *, ids: Optional[list[str]], datasets: Optional[list[str]],
                 limit: Optional[int], force: bool, log: logging.Logger) -> tuple[list[WorkItem], dict[str, int]]:
     """Manifest ∩ prepared, minus already generated (unless force), filtered and limited."""
@@ -191,7 +199,9 @@ def generate_one(item: WorkItem, client: GatewayClient, cfg: Config, opts: Optio
         req = client.build_request(parts, system=system_text, schema=QA_OUTPUT_SCHEMA, schema_name="qa_output",
                                    route=opts.route, reasoning_effort=opts.effort, max_tokens=opts.max_tokens)
         write_json(raw_dir / f"{sid}.request.json", {"sample_id": sid, "started_at": started, **req.redacted()})
-        res = client.send(req)
+        with client.usage_context(stage="generate", sample_id=sid, dataset=item.record.dataset,
+                                  batch=_batch_of(cfg, sid)):
+            res = client.send(req)
         finished = now_iso()
         write_json(raw_dir / f"{sid}.response.json", {
             "sample_id": sid, "finished_at": finished, "request_id": res.request_id, "route": res.route,

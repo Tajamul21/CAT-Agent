@@ -46,6 +46,7 @@ STAGES: dict[str, tuple[Optional[str], str]] = {
     "export-ui": ("bench.export_ui", "annotation-UI bundle -> ui/data/*.json, ui/media/<id>/"),
     "status": ("bench.status", "progress table across stages"),
     "probe": ("bench.llm_client", "LLM gateway connectivity / model probe"),
+    "usage": ("bench.usage", "GPT usage per person/day/batch/dataset: tokens and estimated USD"),
     "run-all": (None, "inventory -> sample -> prepare -> generate -> validate -> export-ui"),
 }
 RUN_ALL_ORDER: tuple[str, ...] = ("inventory", "sample", "prepare", "generate", "validate", "export-ui")
@@ -62,6 +63,8 @@ def _globals_parent() -> argparse.ArgumentParser:
     g.add_argument("--config", metavar="PATH", default=None, help="pipeline YAML (default: config/pipeline.yaml)")
     g.add_argument("--data-dir", metavar="PATH", default=None,
                    help="data directory (default: data/; exported as OPHBENCH_DATA_DIR before config load)")
+    g.add_argument("--user", metavar="NAME", default=None,
+                   help="who is running this (recorded in the usage ledger; default: $OPHBENCH_USER or login name)")
     g.add_argument("-v", "--verbose", action="store_true", help="DEBUG logging")
     return g
 
@@ -160,6 +163,8 @@ def load_cfg(args: argparse.Namespace, invoked_from: Path) -> Config:
     """Apply --data-dir (env OPHBENCH_DATA_DIR) and --config, then load the configuration."""
     if getattr(args, "data_dir", None):
         os.environ["OPHBENCH_DATA_DIR"] = str(_resolve_path(args.data_dir, invoked_from))
+    if getattr(args, "user", None):
+        os.environ["OPHBENCH_USER"] = str(args.user).strip()
     cfg_path = _resolve_path(args.config, invoked_from) if getattr(args, "config", None) else None
     if cfg_path is not None and not cfg_path.exists():
         raise FileNotFoundError(f"config file not found: {cfg_path}")

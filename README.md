@@ -120,6 +120,22 @@ ui/data/{meta,index,assignments}.json, ui/data/samples/<sample_id>.json, ui/medi
 logs/<stage>_<timestamp>.log (+ <stage>.latest.log), logs/runs.jsonl
 ```
 
+## 5b. Usage and cost tracking
+Every GPT call (generation, retries, JSON repairs, probes; successful or not) is recorded in
+`ophbench_data/usage/usage_ledger.jsonl` with **who** ran it (`--user NAME` or `$OPHBENCH_USER`, else the login
+name), the video, dataset and batch, input / cached / output / reasoning tokens, latency, request id, a fingerprint of
+the API key (never the key) and the estimated cost.
+```bash
+./ophbench usage                      # totals per person, day, batch, dataset (+ stage, model, key in the report)
+./ophbench usage --person Tajamul --since 2026-10-01
+./ophbench --user Tajamul generate --batch 2   # attribute a run to a person
+```
+Reports: `ophbench_data/usage/usage_report.md`, `usage_summary.json`, `usage_calls.csv`. Costs use
+`config/pipeline.yaml: llm.price_*` (GPT-6 Astra list prices: $10 input, $1 cached input, $50 output per million
+tokens; long prompts over 272K tokens $20 / $75) and are recomputed from tokens on every report, so updating the prices
+to match the JHU gateway bill fixes the history. Clinicians' active time per video and per session travels in their
+progress/export files; `scripts/collect_annotations.py` summarises it per clinician ("Clinician activity").
+
 ## 6. Clinician annotation UI (`ui/`)
 
 Static site (no build step). Clinicians enter an annotator ID, pick their batch, see their assigned videos,
