@@ -31,6 +31,8 @@
   };
   const LENGTH = { one_word: "one word", short_phrase: "short", multi_line: "multi-line" };
   const FOLDER_SAVE_DELAY_MS = 1500;
+  const TICK_S = 5;              // activity clock resolution
+  const IDLE_MS = 120000;        // no input for 2 min (and no video playing) = idle, not counted
 
   // ------------------------------------------------------------------ state
   const state = {
@@ -46,6 +48,9 @@
     canWrite: false,
     unsaved: false,     // changes made while no name/ID was entered
     lastSaved: null,    // {where, at}
+    activity: { by_sample: {}, sessions: [] },  // active seconds per video + work sessions
+    session: null,      // the current session object (inside activity.sessions)
+    lastInput: Date.now(),
   };
 
   // ------------------------------------------------------------------ helpers
@@ -84,6 +89,12 @@
     t = Number(t);
     if (t < 60) return `${Math.round(t)} s`;
     return `${Math.floor(t / 60)} min ${String(Math.round(t % 60)).padStart(2, "0")} s`;
+  }
+  function fmtActive(sec) {
+    sec = Math.round(Number(sec) || 0);
+    if (sec < 60) return `${sec} s`;
+    const h = Math.floor(sec / 3600), m = Math.round((sec % 3600) / 60);
+    return h ? `${h} h ${String(m).padStart(2, "0")} min` : `${m} min`;
   }
   const humanize = (s) => String(s || "").replace(/_/g, " ").replace(/^\w/, (c) => c.toUpperCase());
   const prettyFamily = (s) => String(s || "").replace(/\s*->\s*/g, " → ");
@@ -141,6 +152,62 @@
       if (raw) mergeAnn(JSON.parse(raw));
     } catch (e) { /* unreadable store: start empty */ }
   }
+  // ---- activity (active time per video and per session; only with a name/ID) ----
+  const activityKey = () => `catagent.activity.v2.${state.reviewer.toLowerCase()}`;
+  function loadActivity() {
+    state.activity = { by_sample: {}, sessions: [] };
+    state.session = null;
+    if (!state.reviewer) return;
+    try {
+      const raw = localStorage.getItem(activityKey());
+      if (raw) mergeActivity(JSON.parse(raw));
+    } catch (e) { /* start empty */ }
+  }
+  function saveActivity() {
+    if (!state.reviewer) return;
+    try { localStorage.setItem(activityKey(), JSON.stringify(state.activity)); } catch (e) { /* ignore */ }
+  }
+  function mergeActivity(a) {
+    if (!a || typeof a !== "object") return;
+    for (const [sid, sec] of Object.entries(a.by_sample || {})) {
+      state.activity.by_sample[sid] = Math.max(Number(state.activity.by_sample[sid]) || 0, Number(sec) || 0);
+    }
+    const seen = new Set(state.activity.sessions.map((s) => s.started_at));
+    for (const s of a.sessions || []) {
+      if (s && s.started_at && !seen.has(s.started_at)) { state.activity.sessions.push({ ...s }); seen.add(s.started_at); }
+    }
+    state.activity.sessions.sort((x, y) => String(x.started_at).localeCompare(String(y.started_at)));
+    if (state.activity.sessions.length > 200) state.activity.sessions = state.activity.sessions.slice(-200);
+  }
+  const totalActive = () => Object.values(state.activity.by_sample).reduce((a, b) => a + (Number(b) || 0), 0);
+  function startSession() {
+    if (!state.reviewer || state.session) return;
+    state.session = { started_at: nowIso(), last_at: nowIso(), active_s: 0, videos: [] };
+    state.activity.sessions.push(state.session);
+    saveActivity();
+  }
+  function tick() {
+    if (!state.reviewer || state.current < 0 || !state.cases.length || document.visibilityState !== "visible") return;
+    const v = $("#player");
+    const playing = !!(v && !v.paused && !v.ended);
+    if (!playing && Date.now() - state.lastInput > IDLE_MS) return;
+    startSession();
+    const sid = state.cases[state.current].id;
+    state.activity.by_sample[sid] = (Number(state.activity.by_sample[sid]) || 0) + TICK_S;
+    state.session.active_s += TICK_S;
+    state.session.last_at = nowIso();
+    if (!state.session.videos.includes(sid)) state.session.videos.push(sid);
+    saveActivity();
+    updateTimeLabels();
+  }
+  function updateTimeLabels() {
+    const tot = $("#active-time");
+    if (tot) tot.textContent = state.reviewer ? `Active time ${fmtActive(totalActive())}` : "";
+    const here = $("#time-here");
+    const c = state.cases[state.current];
+    if (here && c) here.textContent = `⏱ ${fmtActive(state.activity.by_sample[c.id] || 0)} on this video`;
+  }
+
   function setSaveStatus() {
     const s = $("#save-status");
     if (!s) return;
@@ -198,6 +265,7 @@
     state.reviewer = next;
     try { localStorage.setItem("catagent.reviewer", next); } catch (e) { /* ignore */ }
     state.ann = {};
+    loadActivity();
     if (next) {
       loadStore();
       mergeAnn(carry);
@@ -358,7 +426,8 @@
       } catch (err) { badJson += 1; }
     }
     let restored = 0;
-    for (const p of progress) restored += mergeAnn(p.samples);
+    for (const p of progress) { restored += mergeAnn(p.samples); mergeActivity(p.activity); }
+    if (progress.length) saveActivity();
     if (restored) persist();
     if (!docs.size) {
       if (restored && state.cases.length) { renderCase(); renderList(); updateProgress(); toast(`Restored ${restored} saved review(s)`); return; }
@@ -383,6 +452,7 @@
       return oa - ob || a.id.localeCompare(b.id);
     });
     const withVideo = state.cases.filter((c) => c.video).length;
+    startSession();
     showWorkspace();
     const firstTodo = state.cases.findIndex((c) => statusOf(c.id) !== "done");
     openCase(firstTodo >= 0 ? firstTodo : 0);
@@ -403,6 +473,7 @@
     setSaveStatus();
     renderList();
     updateProgress();
+    updateTimeLabels();
   }
 
   // ------------------------------------------------------------------ sidebar
@@ -705,6 +776,7 @@
           doc.video && doc.video.duration_s ? el("span", { class: "pill", text: fmtDuration(doc.video.duration_s) }) : null,
           doc.procedure_category ? el("span", { class: "pill", text: humanize(doc.procedure_category) }) : null,
           el("span", { class: "pill", text: `Video ${state.current + 1} of ${state.cases.length}` }),
+          el("span", { class: "pill time", id: "time-here", text: `⏱ ${fmtActive(state.activity.by_sample[c.id] || 0)} on this video` }),
           st === "done" ? el("span", { class: "pill good", text: "✓ Done" }) : st === "in_progress" ? el("span", { class: "pill star", text: "In progress" }) : null)),
       el("div", { class: "nav-btns" },
         el("button", { class: "btn ghost", type: "button", text: "← Previous", disabled: state.current === 0, onclick: () => openCase(state.current - 1) }),
@@ -781,6 +853,7 @@
         };
       });
       samples[sid] = {
+        time_spent_s: Number(state.activity.by_sample[sid]) || 0,
         status: a.status, updated_at: a.updated_at, batch: c.doc.batch ?? null, dataset: c.doc.dataset || "",
         procedure: c.doc.procedure || "", comment: a.comment || "", flags: a.flags || [],
         selected_qids: Object.keys(qs).filter((k) => qs[k].selected), questions: qs,
@@ -788,7 +861,12 @@
     }
     return {
       ui_version: UI_VERSION, tool: TOOL, annotator: state.reviewer, exported_at: nowIso(),
-      n_loaded: state.cases.length, n_done: Object.values(samples).filter((s) => s.status === "done").length, samples,
+      n_loaded: state.cases.length, n_done: Object.values(samples).filter((s) => s.status === "done").length,
+      activity: {
+        total_active_s: totalActive(), n_sessions: state.activity.sessions.length,
+        by_sample: state.activity.by_sample, sessions: state.activity.sessions,
+      },
+      samples,
     };
   }
 
@@ -833,14 +911,14 @@
     const data = buildExport();
     const cols = ["annotator", "sample_id", "dataset", "procedure", "status", "qid", "sa_level", "family", "category",
       "selected", "correctness", "edited", "original_question", "final_question", "original_answer", "final_answer",
-      "original_options", "final_options", "question_comment", "video_comment", "updated_at"];
+      "original_options", "final_options", "question_comment", "video_comment", "time_spent_s", "updated_at"];
     const rows = [cols.join(",")];
     for (const [sid, s] of Object.entries(data.samples)) {
       for (const [qid, q] of Object.entries(s.questions || {})) {
         const o = q.original || {}, f = q.final || {};
         rows.push([data.annotator, sid, s.dataset, s.procedure, s.status, qid, o.sa_level, o.family, o.category,
           q.selected ? "yes" : "no", q.correctness, q.edited ? "yes" : "no", o.question, f.question, o.answer, f.answer,
-          o.options, f.options, q.comment, s.comment, s.updated_at].map(csvCell).join(","));
+          o.options, f.options, q.comment, s.comment, s.time_spent_s ?? "", s.updated_at].map(csvCell).join(","));
       }
     }
     if (rows.length === 1) { toast("Nothing reviewed yet"); return; }
@@ -858,6 +936,8 @@
       if (owner && owner.toLowerCase() !== state.reviewer.toLowerCase() &&
           !window.confirm(`This progress file belongs to "${owner}". Load it into your review as "${state.reviewer}"?`)) return;
       const n = mergeAnn(data.samples);
+      mergeActivity(data.activity);
+      saveActivity();
       persist();
       if (state.cases.length) { renderCase(); renderList(); updateProgress(); }
       toast(`Loaded ${n} saved video review(s)${state.cases.length ? "" : ". Now open your batch folder."}`, 3800);
@@ -878,6 +958,15 @@
   function init() {
     try { state.reviewer = (localStorage.getItem("catagent.reviewer") || "").trim(); } catch (e) { /* ignore */ }
     loadStore();
+    loadActivity();
+    const markInput = () => { state.lastInput = Date.now(); };
+    for (const ev of ["mousemove", "mousedown", "keydown", "wheel", "touchstart", "input"]) {
+      document.addEventListener(ev, markInput, { passive: true, capture: true });
+    }
+    setInterval(tick, TICK_S * 1000);
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "hidden" && state.reviewer && state.cases.length) { saveActivity(); persist(); }
+    });
     for (const input of document.querySelectorAll(".reviewer-input")) {
       input.value = state.reviewer;
       input.addEventListener("input", () => {
