@@ -165,15 +165,20 @@ Not yet exercised on real data: the full 1,500 prepare/generate run, `--package-
 and the browser UI (verified headless with a fake‑DOM harness only — do a 10‑minute manual pass in Chrome/Firefox before
 sending links to clinicians).
 
-## 6c. Upload batch zips to SharePoint
-Packages go straight from the server to the SharePoint folder in `config/pipeline.yaml: sharepoint`
-(Wound project > Documents > Data_Dropbox/Annotations/Cataract-QA/tashraf4) with rclone (`/mnt/store/tashraf4/bin/rclone`).
+## 6c. Upload to SharePoint
+Files go straight from the server to the SharePoint folder in `config/pipeline.yaml: sharepoint`
+(Wound project > Documents > Data_Dropbox/Annotations/Cataract-QA/tashraf4).
 ```bash
-bash scripts/sharepoint_setup.sh        # once: sign in with your JHU account (run in the VS Code terminal)
-bash scripts/upload_batch.sh 1          # every batch: zips if needed, uploads, verifies the size
+bash scripts/sharepoint_setup.sh            # once: JHU sign-in (run in the VS Code terminal), pins the folder, tests an upload
+bash scripts/upload_batch.sh 1              # a batch: zips if needed, uploads batch_001.zip, verifies the size
+python3 scripts/sp_upload.py                # menu: choose files/folders from the packages folder
+python3 scripts/sp_upload.py PATH ... [--zip] [--dest SUBFOLDER] [--force]   # any file or folder on the server
+python3 scripts/sp_upload.py --list         # what is already in the SharePoint folder
 ```
-If the link-based sign-in cannot reach localhost:53682, run `rclone authorize "onedrive"` on your Mac
-(`brew install rclone`) and `bash scripts/sharepoint_setup.sh --paste`. Uploads are logged in `ophbench_data/logs/uploads.jsonl`.
+Folders keep their structure; files already there with the same size are skipped, so an interrupted upload can just be
+re-run. Uploads use Microsoft Graph upload sessions straight into the folder (rclone keeps the sign-in fresh;
+`/mnt/store/tashraf4/bin/rclone`). Every upload is logged in `ophbench_data/logs/uploads.jsonl`. If the link sign-in
+cannot reach localhost:53682, run `rclone authorize "onedrive"` on your Mac and `bash scripts/sharepoint_setup.sh --paste`.
 
 ## 7. Stage 2 hook
 `data/annotations/merged.jsonl` (clinician selections + edits) joined with `data/qa/qa_validated.jsonl` and

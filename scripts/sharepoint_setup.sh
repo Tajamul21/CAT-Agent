@@ -67,8 +67,10 @@ print(pick[0]["id"] if pick else "")
 chmod 600 "$("$RCLONE" config file | tail -1)"
 unset TOKEN
 
-say "Step 3/3: checking that this server can write to $FOLDER"
-TEST=".ophbench_write_test_$$.txt"
-echo "ophbench upload test $(date -Is)" | "$RCLONE" rcat "$REMOTE:$FOLDER/$TEST"
-"$RCLONE" deletefile "$REMOTE:$FOLDER/$TEST"
-say "Done. Upload a batch with:  bash scripts/upload_batch.sh 1"
+say "Step 3/3: connecting to $FOLDER and testing an upload"
+# Folders shared with you often cannot be reached by walking down from the library root, so the connection
+# is pinned to the folder's ID and uploads go straight into it (scripts/sp_upload.py).
+cd "$REPO"
+"$PY" scripts/sp_upload.py --pin-folder
+"$PY" scripts/sp_upload.py --selftest
+say "Done. Upload a batch:  bash scripts/upload_batch.sh 1     Choose any file/folder:  python3 scripts/sp_upload.py"
