@@ -76,3 +76,11 @@ ui:
 batches:
   size: 100                      # samples per annotation batch (benchmark order interleaves datasets)
   package_kind: preview          # preview (360p) | source (original / concatenated case video)
+
+# ---------------------------------------------------------------- SharePoint upload of clinician packages (rclone)
+sharepoint:
+  rclone: /mnt/store/tashraf4/bin/rclone
+  remote: jhu-wound                                   # rclone remote name created by scripts/sharepoint_setup.sh
+  site_url: https://livejohnshopkins.sharepoint.com/sites/Woundproject
+  library: Documents                                  # "Shared Documents"
+  folder: Data_Dropbox/Annotations/Cataract-QA/tashraf4

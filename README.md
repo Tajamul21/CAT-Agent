@@ -165,6 +165,16 @@ Not yet exercised on real data: the full 1,500 prepare/generate run, `--package-
 and the browser UI (verified headless with a fake‑DOM harness only — do a 10‑minute manual pass in Chrome/Firefox before
 sending links to clinicians).
 
+## 6c. Upload batch zips to SharePoint
+Packages go straight from the server to the SharePoint folder in `config/pipeline.yaml: sharepoint`
+(Wound project > Documents > Data_Dropbox/Annotations/Cataract-QA/tashraf4) with rclone (`/mnt/store/tashraf4/bin/rclone`).
+```bash
+bash scripts/sharepoint_setup.sh        # once: sign in with your JHU account (run in the VS Code terminal)
+bash scripts/upload_batch.sh 1          # every batch: zips if needed, uploads, verifies the size
+```
+If the link-based sign-in cannot reach localhost:53682, run `rclone authorize "onedrive"` on your Mac
+(`brew install rclone`) and `bash scripts/sharepoint_setup.sh --paste`. Uploads are logged in `ophbench_data/logs/uploads.jsonl`.
+
 ## 7. Stage 2 hook
 `data/annotations/merged.jsonl` (clinician selections + edits) joined with `data/qa/qa_validated.jsonl` and
 `data/prepared/batch_<KKK>/<id>/sample.json` is the input for stage 2 (e.g. building the final benchmark items / agent evaluation).
