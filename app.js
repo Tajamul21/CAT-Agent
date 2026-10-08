@@ -800,8 +800,12 @@
       el("span", null, "Pick the ", el("b", { text: `best ${CFG.SELECT_MAX > 1 ? `1–${CFG.SELECT_MAX}` : "1"}` }), " question(s) with ★, check the answer, edit if needed."),
       el("span", { class: "pill star", text: `★ ${nSel} / ${CFG.SELECT_MAX}` }));
 
+    // keep the same video player while working on the same video (re-creating it would restart playback)
+    const existing = root.dataset.caseId === c.id ? root.querySelector(".video-panel") : null;
+    const videoPanel = existing || renderVideoPanel(c);
     root.replaceChildren(el("div", { class: "case-inner" }, head,
-      el("div", { class: "grid" }, renderVideoPanel(c), el("div", { class: "q-col" }, hint, questions, doneBar))));
+      el("div", { class: "grid" }, videoPanel, el("div", { class: "q-col" }, hint, questions, doneBar))));
+    root.dataset.caseId = c.id;
   }
 
   function markDone(c) {
