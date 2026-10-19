@@ -678,8 +678,8 @@
       el("span", { class: "q-index", text: `Q${k + 1}` }),
       SA[q.sa_level] ? el("span", { class: `pill ${SA[q.sa_level][1]}`, text: SA[q.sa_level][0] })
         : q.category ? el("span", { class: "pill accent", text: humanize(q.category) }) : null,
-      q.answer_type ? el("span", { class: "pill", text: humanize(q.answer_type) + (LENGTH[q.answer_length] ? ` · ${LENGTH[q.answer_length]}` : "") }) : null,
-      q.difficulty ? el("span", { class: "pill", text: q.difficulty === "very_hard" ? "Very hard" : humanize(q.difficulty) }) : null,
+      q.answer_type && q.answer_type !== "free_text" ? el("span", { class: "pill", text: humanize(q.answer_type) + (LENGTH[q.answer_length] ? ` · ${LENGTH[q.answer_length]}` : "") }) : null,
+      q.difficulty && (q.why_hard || q.sa_level) ? el("span", { class: "pill", text: q.difficulty === "very_hard" ? "Very hard" : humanize(q.difficulty) }) : null,
       qa && qa.edited ? el("span", { class: "pill warn", text: "Edited" }) : null);
 
     // question block
