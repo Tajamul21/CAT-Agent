@@ -76,3 +76,4 @@
 .final .q-review { justify-content: flex-start; }
 
 @media (max-width: 1150px) { .traj-grid { grid-template-columns: 1fr; } }
+.t-row.plain .label { color: var(--faint); }

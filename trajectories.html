@@ -4,10 +4,10 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>CAT-Agent Trajectory Review</title>
-  <meta name="description" content="Check tool-use trajectories for surgical videos: question, thoughts, tool calls and outputs, final answer.">
+  <meta name="description" content="Rate the thoughts in tool-use trajectories for surgical videos.">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%230f766e'/%3E%3Ccircle cx='16' cy='16' r='6' fill='white'/%3E%3Ccircle cx='16' cy='16' r='3' fill='%230f766e'/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="styles.css?v=202610261900">
-  <link rel="stylesheet" href="traj.css?v=202610261900">
+  <link rel="stylesheet" href="styles.css?v=202610262000">
+  <link rel="stylesheet" href="traj.css?v=202610262000">
 </head>
 <body>
   <header class="topbar">
@@ -30,7 +30,7 @@
         <button id="btn-export" class="btn primary" type="button" aria-haspopup="true" aria-expanded="false">Export</button>
         <div id="export-menu" class="menu hidden" role="menu">
           <button type="button" role="menuitem" data-export="json">Export JSON <small>full record, re-importable</small></button>
-          <button type="button" role="menuitem" data-export="csv">Export CSV <small>one row per thought / call / output</small></button>
+          <button type="button" role="menuitem" data-export="csv">Export CSV <small>one row per thought</small></button>
           <hr>
           <button type="button" role="menuitem" data-export="import">Load saved progress… <small>a progress or export file, e.g. from another computer</small></button>
         </div>
@@ -46,7 +46,7 @@
         <div class="mode-label">What are you reviewing?</div>
         <div class="mode-opts">
           <a href="index.html" class="mode-opt"><b>Questions</b><small>Pick the best questions for each video and check their answers</small></a>
-          <a href="trajectories.html" aria-current="page" class="mode-opt on"><b>Trajectories</b><small>Check each thought, tool call and output, then the final answer</small></a>
+          <a href="trajectories.html" aria-current="page" class="mode-opt on"><b>Trajectories</b><small>Rate the reasoning (thoughts) in each tool-use trajectory</small></a>
         </div>
       </nav>
       <div class="drop-icon" aria-hidden="true"></div>
@@ -68,10 +68,9 @@
       <h2>How it works</h2>
       <ol class="steps">
         <li><span class="n">1</span><b>Watch</b><p>Play the clip. Every time in the trajectory is a button that jumps there.</p></li>
-        <li><span class="n">2</span><b>Question</b><p>Is the question clear and answerable from the video?</p></li>
-        <li><span class="n">3</span><b>Each step</b><p>Mark the thought, the tool call and the tool output: ✓ correct, ⚑ flag, ✗ incorrect.</p></li>
-        <li><span class="n">4</span><b>Final answer</b><p>Correct, partly correct, incorrect or can&#39;t tell. Add a note when something is off.</p></li>
-        <li><span class="n">5</span><b>Save &amp; export</b><p>“Mark the other N correct” fills in the rest. Export when finished and send the file.</p></li>
+        <li><span class="n">2</span><b>Read the steps</b><p>Each step shows a thought, the tool call and its output. The final answer is already verified.</p></li>
+        <li><span class="n">3</span><b>Rate each thought</b><p>✓ correct, ⚑ flag or ✗ incorrect. Add a note when something is off.</p></li>
+        <li><span class="n">4</span><b>Save &amp; export</b><p>“Mark the other N correct” fills in the rest. Export when finished and send the file.</p></li>
       </ol>
     </section>
     <input id="input-folder" type="file" webkitdirectory directory multiple hidden>
@@ -103,6 +102,6 @@
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-  <script src="traj.js?v=202610261900"></script>
+  <script src="traj.js?v=202610262000"></script>
 </body>
 </html>

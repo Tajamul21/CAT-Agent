@@ -7,8 +7,8 @@
  *   frames_1fps/<case>/...    frames used as tool inputs (shown with their bbox)
  *   trajectories_open.jsonl   optional run log: vqid and GPT's own concerns
  *   source_open.json          optional: vqid and duration per key
- * For each trajectory the annotator marks the question, every thought, tool call and tool output as
- * correct / flag / incorrect (with a note), and the final answer as correct / partly / incorrect / can't tell.
+ * For each trajectory the annotator marks every thought as correct / flag / incorrect (with a note). The question,
+ * tool calls, tool outputs and the final answer (verified against the dataset) are shown as context only.
  *
  * Saving works as in the question review app: browser storage, plus a progress file
  * (catagent_traj_progress_<id>.json) written into the folder in Chrome/Edge and reloaded from it.
@@ -22,10 +22,6 @@
   const IMAGE_EXT = ["jpg", "jpeg", "png", "webp"];
   const SKIP_DIRS = ["old_runs", "__pycache__", "prompts", "examples", "node_modules"];
   const ITEM_VERDICTS = [["ok", "✓ Correct"], ["flag", "⚑ Flag"], ["wrong", "✗ Incorrect"]];
-  const FINAL_VERDICTS = [
-    ["correct", "Correct"], ["partial", "Partly"], ["incorrect", "Incorrect"], ["cannot_verify", "Can't tell"],
-  ];
-  const PARTS = [["thought", "Thought"], ["call", "Tool call"], ["output", "Tool output"]];
   const FOLDER_SAVE_DELAY_MS = 1500;
   const TICK_S = 5;
   const IDLE_MS = 120000;
@@ -307,10 +303,7 @@
     return a.steps[n] ? a.steps[n][part] : null;
   }
   function allRefs(c) {
-    const refs = ["question"];
-    c.traj.steps.forEach((s, i) => PARTS.forEach(([p]) => refs.push(["step", String(i + 1), p])));
-    refs.push("final");
-    return refs;
+    return c.traj.steps.map((s, i) => ["step", String(i + 1), "thought"]);
   }
   function counts(c) {
     const out = { total: 0, rated: 0, flag: 0, wrong: 0 };
@@ -319,8 +312,7 @@
       out.total += 1;
       if (it && it.v) out.rated += 1;
       if (it && it.v === "flag") out.flag += 1;
-      if (it && ["wrong", "incorrect", "partial"].includes(it.v)) out.wrong += 1;
-      if (it && it.v === "cannot_verify") out.flag += 1;
+      if (it && it.v === "wrong") out.wrong += 1;
     }
     return out;
   }
@@ -665,6 +657,13 @@
       noteBox(sid, ref));
   }
 
+  /** A row shown for context only (tool calls and outputs are not rated). */
+  function plainRow(label, body, extraClass) {
+    return el("div", { class: `t-row plain ${extraClass || ""}` },
+      el("div", { class: "t-row-head" }, el("span", { class: "label", text: label })),
+      el("div", { class: "t-body" }, body));
+  }
+
   function argsView(c, call) {
     const tool = (c.sample.tools || []).find((t) => t.name === call.name);
     const args = call.args && typeof call.args === "object" ? call.args : { arguments: call.args };
@@ -698,31 +697,24 @@
       el("div", { class: "step-head" }, el("span", { class: "step-n", text: n }),
         el("span", { class: "step-title", text: `Step ${n}` }), s.calls.map((cl) => el("span", { class: "pill accent", text: cl.name }))),
       itemRow(sid, ["step", n, "thought"], "Thought", el("div", { class: "thought" }, withTimes(s.thought || "(no thought)"))),
-      itemRow(sid, ["step", n, "call"], "Tool call", s.calls.map((cl) => argsView(c, cl))),
-      itemRow(sid, ["step", n, "output"], "Tool output",
+      plainRow("Tool call", s.calls.map((cl) => argsView(c, cl))),
+      plainRow("Tool output",
         s.outputs.length ? s.outputs.map(outputView) : el("div", { class: "orig", text: "(no tool output)" }), "out"));
   }
 
   function renderFinal(c) {
-    const sid = c.id, f = c.traj.final || { answer: "" };
-    const it = itemOf(sid, "final") || blankItem();
+    const f = c.traj.final || { answer: "" };
     const gold = goldOf(c.sample.gt_answer);
-    const concerns = (c.meta.concerns || []).filter(Boolean);
-    return el("article", { class: `panel step final v-${it.v || "none"}` },
-      el("div", { class: "step-head" }, el("span", { class: "step-n done", text: "✓" }), el("span", { class: "step-title", text: "Final answer" })),
+    return el("article", { class: "panel step final" },
+      el("div", { class: "step-head" }, el("span", { class: "step-n done", text: "✓" }), el("span", { class: "step-title", text: "Final answer" }),
+        el("span", { class: "pill good", text: "Verified" })),
       f.thought ? el("div", { class: "thought", style: { marginBottom: "8px" } }, withTimes(f.thought)) : null,
       el("div", { class: "answer" }, f.answer || "(no final answer)"),
-      concerns.length ? el("div", { class: "concerns" }, el("b", { text: "GPT's own concerns (parts the frames may not support)" }),
-        el("ul", null, concerns.map((x) => el("li", null, withTimes(x))))) : null,
       el("details", { class: "reason" },
         el("summary", { text: `Reference answers from the dataset (${gold.accepted.length}${gold.rejected.length ? ` + ${gold.rejected.length} rejected` : ""})` }),
         el("div", { class: "reason-body" },
           el("ul", { class: "gold" }, gold.accepted.map((g) => el("li", { text: g }))),
-          gold.rejected.length ? [el("b", { text: "Rejected: " }), el("ul", { class: "gold rej" }, gold.rejected.map((g) => el("li", { text: g })))] : null)),
-      el("div", { class: "q-review" },
-        el("div", null, el("div", { class: "label", style: { marginTop: "0" }, text: "Is the final answer correct for this video?" }),
-          verdictCtl(sid, "final", FINAL_VERDICTS))),
-      noteBox(sid, "final"));
+          gold.rejected.length ? [el("b", { text: "Rejected: " }), el("ul", { class: "gold rej" }, gold.rejected.map((g) => el("li", { text: g })))] : null)));
   }
 
   function renderCase() {
@@ -748,16 +740,13 @@
         el("button", { class: "btn ghost", type: "button", text: "← Previous", disabled: state.current === 0, onclick: () => openCase(state.current - 1) }),
         el("button", { class: "btn ghost", type: "button", text: "Next →", disabled: state.current >= state.cases.length - 1, onclick: () => openCase(state.current + 1) })));
 
-    const qIt = itemOf(c.id, "question") || blankItem();
-    const question = el("article", { class: `panel step question v-${qIt.v || "none"}` },
-      el("div", { class: "step-head" }, el("span", { class: "step-n q", text: "Q" }), el("span", { class: "step-title", text: "Question" }),
-        el("span", { class: "grow" }), verdictCtl(c.id, "question", ITEM_VERDICTS, true)),
-      el("div", { class: "q-text" }, c.traj.question),
-      noteBox(c.id, "question"));
+    const question = el("article", { class: "panel step question" },
+      el("div", { class: "step-head" }, el("span", { class: "step-n q", text: "Q" }), el("span", { class: "step-title", text: "Question" })),
+      el("div", { class: "q-text" }, c.traj.question));
 
     const hint = el("div", { class: "q-hint" },
-      el("span", null, "Check each ", el("b", { text: "thought, tool call and tool output" }), " against the video, then the final answer."),
-      el("span", { class: "pill star", text: `${n.rated} / ${n.total} rated` }));
+      el("span", null, "Rate each ", el("b", { text: "thought" }), " against the video. Tool calls, outputs and the verified answer are context."),
+      el("span", { class: "pill star", text: `${n.rated} / ${n.total} thoughts rated` }));
 
     const overall = el("textarea", {
       class: "comment", rows: 1, placeholder: "Comment on this trajectory (optional): missing step, better tool, …",
@@ -769,10 +758,10 @@
       el("div", { style: { display: "grid", gap: "6px", justifyItems: "end" } },
         el("div", { class: "edit-row" },
           left ? el("button", { class: "btn ghost", type: "button", text: `Mark the other ${left} correct`,
-            title: "Sets every unrated thought, call, output and the question to ✓ Correct (the final answer too)",
+            title: "Sets every unrated thought to ✓ Correct",
             onclick: () => markRestCorrect(c) }) : null,
           el("button", { class: "btn primary lg", type: "button", text: st === "done" ? "Saved ✓  Next →" : "Done & next →", onclick: () => markDone(c) })),
-        el("div", { class: "msg", text: left ? `${left} item${left === 1 ? "" : "s"} not rated yet.` : "Everything rated. Progress saves automatically." })));
+        el("div", { class: "msg", text: left ? `${left} thought${left === 1 ? "" : "s"} not rated yet.` : "All thoughts rated. Progress saves automatically." })));
 
     for (const u of state.imageUrls) URL.revokeObjectURL(u);
     state.imageUrls = [];
@@ -789,7 +778,7 @@
   function markRestCorrect(c) {
     for (const r of allRefs(c)) {
       const it = itemOf(c.id, r, true);
-      if (!it.v) it.v = r === "final" ? "correct" : "ok";
+      if (!it.v) it.v = "ok";
     }
     touch(c.id);
     renderCase();
@@ -798,8 +787,8 @@
     if (!requireReviewer()) return;
     const n = counts(c);
     if (n.rated < n.total) {
-      toast(`Rate every item first (${n.total - n.rated} left), or use “Mark the other ${n.total - n.rated} correct”.`, 3800);
-      const first = document.querySelector(".t-row.v-none, .step.v-none");
+      toast(`Rate every thought first (${n.total - n.rated} left), or use “Mark the other ${n.total - n.rated} correct”.`, 3800);
+      const first = document.querySelector(".t-row.v-none");
       if (first) first.scrollIntoView({ block: "center", behavior: "smooth" });
       return;
     }
@@ -823,14 +812,14 @@
       if (!c) { samples[sid] = a; continue; }
       const steps = c.traj.steps.map((s, i) => {
         const r = a.steps[String(i + 1)] || {};
-        return { step: i + 1, tools: s.calls.map((x) => x.name), thought: normItem(r.thought), call: normItem(r.call), output: normItem(r.output) };
+        return { step: i + 1, tools: s.calls.map((x) => x.name), thought: normItem(r.thought), thought_text: s.thought || "" };
       });
       const n = counts(c);
       samples[sid] = {
         vqid: c.meta.vqid || "", video: c.videoPath, time_spent_s: Number(state.activity.by_sample[sid]) || 0,
         status: a.status, updated_at: a.updated_at, comment: a.comment || "",
-        n_items: n.total, n_rated: n.rated, n_flagged: n.flag, n_incorrect: n.wrong,
-        question: normItem(a.question), final: normItem(a.final), final_answer: (c.traj.final && c.traj.final.answer) || "",
+        n_thoughts: n.total, n_rated: n.rated, n_flagged: n.flag, n_incorrect: n.wrong,
+        question: c.traj.question, final_answer: (c.traj.final && c.traj.final.answer) || "",
         steps: Object.fromEntries(steps.map((s) => [String(s.step), s])),
       };
     }
@@ -877,22 +866,13 @@
   function exportCsv() {
     if (!requireReviewer()) return;
     const data = buildExport();
-    const byId = new Map(state.cases.map((c) => [c.id, c]));
-    const cols = ["annotator", "key", "vqid", "status", "item", "step", "tool", "verdict", "note", "text", "trajectory_comment", "time_spent_s", "updated_at"];
+    const cols = ["annotator", "key", "vqid", "status", "question", "step", "tool", "verdict", "note", "thought", "trajectory_comment", "time_spent_s", "updated_at"];
     const rows = [cols.join(",")];
     for (const [sid, s] of Object.entries(data.samples)) {
-      const c = byId.get(sid);
-      const row = (item, step, tool, it, text) => rows.push([data.annotator, sid, s.vqid, s.status, item, step, tool,
-        (it && it.v) || "", (it && it.note) || "", text, s.comment, s.time_spent_s ?? "", s.updated_at].map(csvCell).join(","));
-      row("question", "", "", s.question, c ? c.traj.question : "");
       for (const [k, st] of Object.entries(s.steps || {})) {
-        const src = c && c.traj.steps[Number(k) - 1];
-        row("thought", k, (st.tools || []).join(" | "), st.thought, src ? src.thought : "");
-        row("call", k, (st.tools || []).join(" | "), st.call, src ? JSON.stringify(src.calls.map((x) => ({ [x.name]: x.args }))) : "");
-        row("output", k, (st.tools || []).join(" | "), st.output,
-          src ? src.outputs.map((o) => (o.content && typeof o.content === "object" ? o.content.content : o.content)).join(" | ") : "");
+        rows.push([data.annotator, sid, s.vqid, s.status, s.question, k, (st.tools || []).join(" | "), (st.thought && st.thought.v) || "",
+          (st.thought && st.thought.note) || "", st.thought_text, s.comment, s.time_spent_s ?? "", s.updated_at].map(csvCell).join(","));
       }
-      row("final", "", "", s.final, s.final_answer || "");
     }
     if (rows.length === 1) { toast("Nothing reviewed yet"); return; }
     download(`catagent_traj_review_${safeName(state.reviewer)}_${stamp()}.csv`, "﻿" + rows.join("\r\n"), "text/csv");
