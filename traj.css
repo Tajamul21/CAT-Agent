@@ -1,0 +1,78 @@
+/* CAT-Agent trajectory review — additions on top of styles.css */
+.traj-grid { grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); }
+.fine a { color: var(--accent); }
+
+/* sidebar badges */
+.case-flag { font-size: 12px; font-weight: 700; color: var(--warn); }
+.case-flag.bad { color: var(--bad); }
+.pill.bad { background: var(--bad-soft); color: var(--bad); border-color: transparent; }
+
+/* a step card */
+.step { padding: 14px 16px 12px; border-left: 4px solid var(--border-strong); }
+.step-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
+.step-head .grow { flex: 1; }
+.step-n {
+  display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 50%;
+  background: var(--accent-soft); color: var(--accent-strong); font-weight: 800; font-size: 13px;
+}
+.step-n.q { background: var(--info-soft); color: #1f5fbf; }
+.step-n.done { background: var(--good-soft); color: var(--good); }
+.step-title { font-weight: 700; font-size: 14px; }
+.step.question .q-text { margin-bottom: 4px; }
+
+/* thought / call / output rows */
+.t-row { border-top: 1px dashed var(--border); padding: 10px 0 8px 12px; margin-left: -12px; border-left: 3px solid transparent; }
+.step-head + .t-row { border-top: 0; }
+.t-row-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 6px; }
+.t-row-head .label { margin: 0; }
+.t-body { font-size: 14px; }
+.thought { font-size: 14px; line-height: 1.55; white-space: pre-wrap; color: var(--text); }
+.out-text { font-size: 13.5px; line-height: 1.55; white-space: pre-wrap; background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: 9px; padding: 9px 11px; }
+.note { margin-top: 8px; }
+
+/* verdict colours: the left rail shows the rating at a glance */
+.t-row.v-ok { border-left-color: var(--good); }
+.t-row.v-flag { border-left-color: var(--star); }
+.t-row.v-wrong { border-left-color: var(--bad); }
+.step.v-ok, .step.v-correct { border-left-color: var(--good); }
+.step.v-flag, .step.v-partial, .step.v-cannot_verify { border-left-color: var(--star); }
+.step.v-wrong, .step.v-incorrect { border-left-color: var(--bad); }
+.v-ctl button { padding: 4px 9px; font-size: 12.5px; }
+.seg-ctl button.on[data-v="ok"] { background: var(--good-soft); color: var(--good); }
+.seg-ctl button.on[data-v="flag"] { background: var(--star-soft); color: var(--star); }
+.seg-ctl button.on[data-v="wrong"] { background: var(--bad-soft); color: var(--bad); }
+
+/* tool call */
+.call + .call { margin-top: 10px; }
+.call-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 6px; }
+.tool-name { font-family: var(--mono); font-weight: 700; font-size: 13px; color: var(--accent-strong);
+  background: var(--accent-soft); padding: 2px 8px; border-radius: 6px; cursor: help; }
+.kv.args { font-size: 13px; }
+.kv.args dt { font-family: var(--mono); font-size: 12.5px; }
+.t-link { border: 0; background: var(--accent-soft); color: var(--accent-strong); font: inherit; font-weight: 600;
+  padding: 0 4px; border-radius: 4px; cursor: pointer; }
+.t-link:hover { background: var(--accent); color: #fff; }
+
+/* frames with bbox */
+.frame-fig { margin: 8px 0 0; }
+.frame { position: relative; display: block; padding: 0; border: 1px solid var(--border); border-radius: 9px; overflow: hidden;
+  cursor: zoom-in; background: #000; max-width: 360px; width: 100%; }
+.frame img, .lb-frame img { display: block; width: 100%; height: auto; }
+.frame-fig figcaption { font-size: 12px; color: var(--faint); margin-top: 4px; font-family: var(--mono); }
+.frame-missing { font-size: 12.5px; color: var(--faint); margin-top: 6px; }
+.bbox { position: absolute; border: 2px solid #facc15; box-shadow: 0 0 0 1px rgba(0, 0, 0, .6); pointer-events: none; }
+.lightbox { position: fixed; inset: 0; z-index: 50; background: rgba(10, 14, 20, .86); display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 10px; padding: 24px; cursor: zoom-out; }
+.lb-frame { position: relative; width: min(1100px, 100%); }
+.lb-cap { color: #cbd5e1; font-size: 13px; font-family: var(--mono); }
+
+/* final answer */
+.concerns { margin-top: 10px; padding: 9px 12px; background: var(--warn-soft); border-radius: 9px; font-size: 13.5px; }
+.concerns b { color: var(--warn); font-size: 12.5px; }
+.concerns ul, .gold { margin: 6px 0 0; padding-left: 18px; }
+.gold li { margin-bottom: 3px; color: var(--text); }
+.gold.rej li { color: var(--bad); }
+.final .q-review { justify-content: flex-start; }
+
+@media (max-width: 1150px) { .traj-grid { grid-template-columns: 1fr; } }
