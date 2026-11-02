@@ -16,5 +16,5 @@ window.OPHBENCH_CONFIG = {
   MEDIA_BASE_URL: "",
   SUBMIT_URL: "",
   SELECT_MIN: 1,
-  SELECT_MAX: 2
+  SELECT_MAX: 3
 };
